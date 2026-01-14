@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/app/components/Header';
+import Navigation from '@/app/components/Navigation';
 
 interface Company {
   id: number;
@@ -148,6 +149,12 @@ export default function CompanyMasterPage() {
         iconBgColor="bg-indigo-600"
         subtitle="管理者 - 取引先マスタ管理"
         userName={user.name}
+      />
+      <Navigation 
+        items={['ダッシュボード', '出荷計画', '商品マスタ', '取引先', 'ユーザー管理', 'レポート']}
+        activeItem="取引先"
+        activeColor="indigo"
+        role="admin"
       />
 
       {/* メインコンテンツ */}

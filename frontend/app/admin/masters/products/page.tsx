@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { products as initialProducts, productCategories, suppliers, Product } from '@/data/products';
 import Header from '@/app/components/Header';
+import Navigation from '@/app/components/Navigation';
 
 export default function ProductMasterPage() {
   const router = useRouter();
@@ -144,6 +145,12 @@ export default function ProductMasterPage() {
         iconBgColor="bg-indigo-600"
         subtitle="管理者 - 商品マスタ管理"
         userName={user.name}
+      />
+      <Navigation 
+        items={['ダッシュボード', '出荷計画', '商品マスタ', '取引先', 'ユーザー管理', 'レポート']}
+        activeItem="商品マスタ"
+        activeColor="indigo"
+        role="admin"
       />
 
       {/* メインコンテンツ */}

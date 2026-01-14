@@ -6,6 +6,7 @@ import { amazonFacilities } from '@/data/amazon-facilities';
 import { supermarketLocations } from '@/data/supermarket-locations';
 import { flowPatterns as flowPatternsData } from '@/data/flow-patterns';
 import Header from '@/app/components/Header';
+import Navigation from '@/app/components/Navigation';
 
 // 配送先マスタデータ（Amazon FBA/AWD + スーパーマーケット）
 const destinations = [...amazonFacilities, ...supermarketLocations];
@@ -229,6 +230,12 @@ export default function NewShipmentPage() {
         iconBgColor="bg-indigo-600"
         subtitle="管理者 - 出荷計画作成"
         userName={user.name}
+      />
+      <Navigation 
+        items={['ダッシュボード', '出荷計画', '商品マスタ', '取引先', 'ユーザー管理', 'レポート']}
+        activeItem="出荷計画"
+        activeColor="indigo"
+        role="admin"
       />
 
       {/* メインコンテンツ */}

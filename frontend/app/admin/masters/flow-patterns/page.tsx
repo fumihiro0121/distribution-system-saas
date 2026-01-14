@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { flowPatterns as initialFlowPatterns, FlowPattern } from '@/data/flow-patterns';
 import Header from '@/app/components/Header';
+import Navigation from '@/app/components/Navigation';
 
 export default function FlowPatternMasterPage() {
   const router = useRouter();
@@ -95,6 +96,12 @@ export default function FlowPatternMasterPage() {
         iconBgColor="bg-indigo-600"
         subtitle="管理者 - フローパターン管理"
         userName={user.name}
+      />
+      <Navigation 
+        items={['ダッシュボード', '出荷計画', '商品マスタ', '取引先', 'ユーザー管理', 'レポート']}
+        activeItem="商品マスタ"
+        activeColor="indigo"
+        role="admin"
       />
 
       {/* メインコンテンツ */}
