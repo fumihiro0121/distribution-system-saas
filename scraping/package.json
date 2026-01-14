@@ -1,0 +1,24 @@
+{
+  "name": "cardboard-scraper",
+  "version": "1.0.0",
+  "description": "ダンボールワンのウェブサイトから商品情報をスクレイピングするツール",
+  "main": "cardboard_scraper.js",
+  "scripts": {
+    "scrape": "node cardboard_scraper_puppeteer.js",
+    "scrape-simple": "node cardboard_scraper.js",
+    "debug": "node debug_page_structure.js",
+    "install-deps": "npm install"
+  },
+  "keywords": [
+    "scraping",
+    "cardboard",
+    "web-scraping"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "puppeteer": "^21.11.0"
+  }
+}
