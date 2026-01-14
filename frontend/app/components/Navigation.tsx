@@ -16,7 +16,7 @@ export default function Navigation({ items, activeItem, activeColor, role }: Nav
           case 'ダッシュボード':
             return '/admin';
           case '出荷計画':
-            return '/admin/shipments/new';
+            return '/admin/shipments';
           case '商品マスタ':
             return '/admin/masters/products';
           case '取引先':
