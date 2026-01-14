@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { amazonFacilities } from '@/data/amazon-facilities';
 import { supermarketLocations } from '@/data/supermarket-locations';
 import { flowPatterns as flowPatternsData } from '@/data/flow-patterns';
+import { products as productsData } from '@/data/products';
 import Header from '@/app/components/Header';
 import Navigation from '@/app/components/Navigation';
 
@@ -49,6 +50,7 @@ export default function NewShipmentPage() {
     packingCompanyIds: [] as number[],
     forwarderIds: [] as number[],
     destinationIds: [] as number[],
+    selectedProducts: [] as Array<{productId: number; quantity: number}>,
     notes: '',
   });
 
@@ -68,6 +70,7 @@ export default function NewShipmentPage() {
   const [packingSearch, setPackingSearch] = useState('');
   const [forwarderSearch, setForwarderSearch] = useState('');
   const [flowPatternSearch, setFlowPatternSearch] = useState('');
+  const [productSearch, setProductSearch] = useState('');
 
   // ページ読み込み時に保存されたデータを復元
   useEffect(() => {
@@ -249,6 +252,14 @@ export default function NewShipmentPage() {
           </button>
           <div className="flex space-x-2">
             <a
+              href="/admin/masters/products"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+            >
+              📦 商品マスタ管理
+            </a>
+            <a
               href="/admin/masters/destinations"
               target="_blank"
               rel="noopener noreferrer"
@@ -283,17 +294,7 @@ export default function NewShipmentPage() {
           <form onSubmit={handleSubmit} className="p-6 space-y-8">
             {/* 基本情報 */}
             <div className="border-b border-gray-200 pb-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">基本情報</h3>
-                <button
-                  type="button"
-                  onClick={() => window.open('/admin/masters/products', '_blank')}
-                  className="text-sm text-indigo-600 hover:text-indigo-900 flex items-center space-x-1"
-                >
-                  <span>📦</span>
-                  <span>商品マスタ管理</span>
-                </button>
-              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">基本情報</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -327,6 +328,153 @@ export default function NewShipmentPage() {
                   </p>
                 </div>
               </div>
+            </div>
+
+            {/* 商品選択 */}
+            <div className="border-b border-gray-200 pb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">商品選択</h3>
+              
+              {/* 商品検索 */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  商品を選択（複数選択可）
+                </label>
+                <input
+                  type="text"
+                  placeholder="商品名、SKU、JANコード、ASINで検索..."
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent mb-2"
+                />
+                
+                {/* 商品リスト */}
+                <div className="border border-gray-300 rounded-lg max-h-96 overflow-y-auto">
+                  <div className="divide-y divide-gray-200">
+                    {productsData
+                      .filter(product =>
+                        product.productName.toLowerCase().includes(productSearch.toLowerCase()) ||
+                        product.sku?.toLowerCase().includes(productSearch.toLowerCase()) ||
+                        product.janCode?.toLowerCase().includes(productSearch.toLowerCase()) ||
+                        product.asin?.toLowerCase().includes(productSearch.toLowerCase())
+                      )
+                      .map((product) => {
+                        const isSelected = formData.selectedProducts.some(p => p.productId === product.id);
+                        const selectedProduct = formData.selectedProducts.find(p => p.productId === product.id);
+                        
+                        return (
+                          <div
+                            key={product.id}
+                            className={`p-4 hover:bg-gray-50 ${isSelected ? 'bg-indigo-50' : ''}`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-3 mb-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setFormData({
+                                          ...formData,
+                                          selectedProducts: [...formData.selectedProducts, { productId: product.id, quantity: 1 }]
+                                        });
+                                      } else {
+                                        setFormData({
+                                          ...formData,
+                                          selectedProducts: formData.selectedProducts.filter(p => p.productId !== product.id)
+                                        });
+                                      }
+                                    }}
+                                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                  />
+                                  <label className="text-sm font-medium text-gray-900">
+                                    {product.productName}
+                                  </label>
+                                </div>
+                                <div className="ml-7 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-600">
+                                  {product.sku && (
+                                    <div>
+                                      <span className="font-medium">SKU:</span> {product.sku}
+                                    </div>
+                                  )}
+                                  {product.janCode && (
+                                    <div>
+                                      <span className="font-medium">JAN:</span> {product.janCode}
+                                    </div>
+                                  )}
+                                  {product.asin && (
+                                    <div>
+                                      <span className="font-medium">ASIN:</span> {product.asin}
+                                    </div>
+                                  )}
+                                  {product.category && (
+                                    <div>
+                                      <span className="font-medium">カテゴリ:</span> {product.category}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="ml-7 mt-2 text-xs text-gray-500">
+                                  {product.unitWeight && <span>重量: {product.unitWeight} | </span>}
+                                  {product.standardBoxQuantity && <span>標準箱入数: {product.standardBoxQuantity}個</span>}
+                                </div>
+                              </div>
+                              
+                              {/* 数量入力 */}
+                              {isSelected && (
+                                <div className="ml-4">
+                                  <label className="block text-xs text-gray-600 mb-1">数量</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={selectedProduct?.quantity || 1}
+                                    onChange={(e) => {
+                                      const newQuantity = parseInt(e.target.value) || 1;
+                                      setFormData({
+                                        ...formData,
+                                        selectedProducts: formData.selectedProducts.map(p =>
+                                          p.productId === product.id
+                                            ? { ...p, quantity: newQuantity }
+                                            : p
+                                        )
+                                      });
+                                    }}
+                                    className="w-24 px-3 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </div>
+
+              {/* 選択された商品のサマリー */}
+              {formData.selectedProducts.length > 0 && (
+                <div className="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                    選択済み商品: {formData.selectedProducts.length}件
+                  </h4>
+                  <div className="space-y-2">
+                    {formData.selectedProducts.map((selectedProduct) => {
+                      const product = productsData.find(p => p.id === selectedProduct.productId);
+                      if (!product) return null;
+                      return (
+                        <div key={selectedProduct.productId} className="flex justify-between items-center text-sm">
+                          <span className="text-gray-900">
+                            {product.productName} 
+                            {product.sku && <span className="text-gray-500 ml-2">({product.sku})</span>}
+                          </span>
+                          <span className="font-medium text-indigo-600">
+                            数量: {selectedProduct.quantity}個
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 配送先情報（基本情報の直後） */}
