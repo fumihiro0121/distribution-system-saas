@@ -104,9 +104,25 @@ export default function PackingDashboard() {
                 {/* ヘッダー */}
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <h4 className="text-xl font-bold text-gray-900 mb-2">{shipment.name}</h4>
+                    <a
+                      href={`/packing/shipments/${shipment.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xl font-bold text-gray-900 hover:text-green-600 hover:underline mb-2 inline-block"
+                    >
+                      {shipment.name}
+                    </a>
                     <div className="flex items-center space-x-4 text-sm text-gray-600">
-                      <span>出荷コード: <span className="font-medium">{shipment.id}</span></span>
+                      <span>出荷コード: 
+                        <a
+                          href={`/packing/shipments/${shipment.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium text-green-600 hover:text-green-800 hover:underline ml-1"
+                        >
+                          {shipment.id}
+                        </a>
+                      </span>
                       <span>メーカー: <span className="font-medium">{shipment.manufacturer}</span></span>
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
                         進行中

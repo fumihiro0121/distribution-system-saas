@@ -110,11 +110,18 @@ export default function ForwarderDashboard() {
           <div className="p-6">
             <div className="space-y-4">
               {shipments.map((shipment) => (
-                <div key={shipment.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition cursor-pointer">
+                <div key={shipment.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <div className="flex items-center space-x-2 mb-1">
-                        <span className="text-lg font-semibold text-gray-900">{shipment.name}</span>
+                        <a
+                          href={`/forwarder/shipments/${shipment.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-lg font-semibold text-gray-900 hover:text-blue-600 hover:underline"
+                        >
+                          {shipment.name}
+                        </a>
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                           shipment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                           shipment.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
@@ -123,7 +130,17 @@ export default function ForwarderDashboard() {
                           {shipment.status === 'pending' ? '未着手' : shipment.status === 'in_progress' ? '進行中' : '完了'}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600">出荷コード: {shipment.id}</p>
+                      <p className="text-sm text-gray-600">
+                        出荷コード: 
+                        <a
+                          href={`/forwarder/shipments/${shipment.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 hover:underline ml-1"
+                        >
+                          {shipment.id}
+                        </a>
+                      </p>
                       <p className="text-sm text-gray-600">メーカー: {shipment.manufacturer}</p>
                     </div>
                     <div className="text-right">

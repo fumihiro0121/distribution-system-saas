@@ -157,11 +157,25 @@ export default function AdminDashboard() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {recentShipments.map((shipment) => (
                   <tr key={shipment.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600">
-                      {shipment.id}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <a
+                        href={`/admin/shipments/${shipment.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:text-indigo-900 hover:underline"
+                      >
+                        {shipment.id}
+                      </a>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {shipment.name}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <a
+                        href={`/admin/shipments/${shipment.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-900 hover:text-indigo-600 hover:underline"
+                      >
+                        {shipment.name}
+                      </a>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {shipment.manufacturer}
