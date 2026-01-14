@@ -91,7 +91,11 @@ export default function NewShipmentPage() {
     if (savedFormData) {
       try {
         const parsed = JSON.parse(savedFormData);
-        setFormData(parsed);
+        // selectedProductsフィールドが存在しない場合は空配列で初期化
+        setFormData({
+          ...parsed,
+          selectedProducts: parsed.selectedProducts || []
+        });
       } catch (e) {
         console.error('Failed to restore form data:', e);
       }
@@ -358,8 +362,8 @@ export default function NewShipmentPage() {
                         product.asin?.toLowerCase().includes(productSearch.toLowerCase())
                       )
                       .map((product) => {
-                        const isSelected = formData.selectedProducts.some(p => p.productId === product.id);
-                        const selectedProduct = formData.selectedProducts.find(p => p.productId === product.id);
+                        const isSelected = formData.selectedProducts?.some(p => p.productId === product.id) || false;
+                        const selectedProduct = formData.selectedProducts?.find(p => p.productId === product.id);
                         
                         return (
                           <div
@@ -376,12 +380,12 @@ export default function NewShipmentPage() {
                                       if (e.target.checked) {
                                         setFormData({
                                           ...formData,
-                                          selectedProducts: [...formData.selectedProducts, { productId: product.id, quantity: 1 }]
+                                          selectedProducts: [...(formData.selectedProducts || []), { productId: product.id, quantity: 1 }]
                                         });
                                       } else {
                                         setFormData({
                                           ...formData,
-                                          selectedProducts: formData.selectedProducts.filter(p => p.productId !== product.id)
+                                          selectedProducts: (formData.selectedProducts || []).filter(p => p.productId !== product.id)
                                         });
                                       }
                                     }}
@@ -431,7 +435,7 @@ export default function NewShipmentPage() {
                                       const newQuantity = parseInt(e.target.value) || 1;
                                       setFormData({
                                         ...formData,
-                                        selectedProducts: formData.selectedProducts.map(p =>
+                                        selectedProducts: (formData.selectedProducts || []).map(p =>
                                           p.productId === product.id
                                             ? { ...p, quantity: newQuantity }
                                             : p
@@ -451,7 +455,7 @@ export default function NewShipmentPage() {
               </div>
 
               {/* 選択された商品のサマリー */}
-              {formData.selectedProducts.length > 0 && (
+              {formData.selectedProducts && formData.selectedProducts.length > 0 && (
                 <div className="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
                   <h4 className="text-sm font-semibold text-gray-900 mb-2">
                     選択済み商品: {formData.selectedProducts.length}件
