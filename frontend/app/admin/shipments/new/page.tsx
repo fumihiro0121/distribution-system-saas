@@ -6,8 +6,10 @@ import { amazonFacilities } from '@/data/amazon-facilities';
 import { supermarketLocations } from '@/data/supermarket-locations';
 import { flowPatterns as flowPatternsData } from '@/data/flow-patterns';
 import { products as productsData } from '@/data/products';
+import { getCartonRecommendations } from '@/data/carton-recommendations';
 import Header from '@/app/components/Header';
 import Navigation from '@/app/components/Navigation';
+import ProductCartonSelector from '@/app/components/ProductCartonSelector';
 
 // 配送先マスタデータ（Amazon FBA/AWD + スーパーマーケット）
 const destinations = [...amazonFacilities, ...supermarketLocations];
@@ -51,6 +53,21 @@ export default function NewShipmentPage() {
     forwarderIds: [] as number[],
     destinationIds: [] as number[],
     selectedProducts: [] as Array<{productId: number; quantity: number}>,
+    selectedCartons: {} as Record<number, Array<{
+      cartonCode: string;
+      cartonName: string;
+      innerDimensions: string;
+      deliverySize: string;
+      capacity: number;
+      boxCount: number;
+      totalBags: number;
+      isPalletFit: boolean;
+      palletConfiguration: {
+        boxesPerLayer: number;
+        layers: number;
+        totalBoxes: number;
+      } | null;
+    }>>,
     notes: '',
   });
 
@@ -91,10 +108,11 @@ export default function NewShipmentPage() {
     if (savedFormData) {
       try {
         const parsed = JSON.parse(savedFormData);
-        // selectedProductsフィールドが存在しない場合は空配列で初期化
+        // selectedProductsとselectedCartonsフィールドが存在しない場合は初期化
         setFormData({
           ...parsed,
-          selectedProducts: parsed.selectedProducts || []
+          selectedProducts: parsed.selectedProducts || [],
+          selectedCartons: parsed.selectedCartons || {}
         });
       } catch (e) {
         console.error('Failed to restore form data:', e);
@@ -383,9 +401,14 @@ export default function NewShipmentPage() {
                                           selectedProducts: [...(formData.selectedProducts || []), { productId: product.id, quantity: 1 }]
                                         });
                                       } else {
+                                        // 商品を削除する際に、その商品の段ボール選択データも削除
+                                        const newSelectedCartons = { ...formData.selectedCartons };
+                                        delete newSelectedCartons[product.id];
+                                        
                                         setFormData({
                                           ...formData,
-                                          selectedProducts: (formData.selectedProducts || []).filter(p => p.productId !== product.id)
+                                          selectedProducts: (formData.selectedProducts || []).filter(p => p.productId !== product.id),
+                                          selectedCartons: newSelectedCartons
                                         });
                                       }
                                     }}
@@ -473,6 +496,51 @@ export default function NewShipmentPage() {
                           <span className="font-medium text-indigo-600">
                             数量: {selectedProduct.quantity}個
                           </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 段ボール選択（各商品ごと） */}
+              {formData.selectedProducts && formData.selectedProducts.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-3">各商品の段ボール選択</h4>
+                  <div className="space-y-4">
+                    {formData.selectedProducts.map((selectedProduct) => {
+                      const product = productsData.find(p => p.id === selectedProduct.productId);
+                      if (!product) return null;
+                      
+                      const cartonOptions = getCartonRecommendations(product.productName);
+                      const selectedCartons = formData.selectedCartons[selectedProduct.productId] || [];
+                      
+                      return (
+                        <div key={selectedProduct.productId} className="border border-gray-200 rounded-lg p-4 bg-white">
+                          <div className="mb-2">
+                            <h5 className="text-sm font-medium text-gray-900">
+                              {product.productName}
+                              {product.sku && <span className="text-gray-500 ml-2 text-xs">({product.sku})</span>}
+                            </h5>
+                            <p className="text-xs text-gray-600">出荷数量: {selectedProduct.quantity}袋</p>
+                          </div>
+                          
+                          <ProductCartonSelector
+                            productName={product.productName}
+                            productId={selectedProduct.productId}
+                            targetQuantity={selectedProduct.quantity}
+                            cartonOptions={cartonOptions}
+                            selectedCartons={selectedCartons}
+                            onCartonsChange={(cartons) => {
+                              setFormData({
+                                ...formData,
+                                selectedCartons: {
+                                  ...formData.selectedCartons,
+                                  [selectedProduct.productId]: cartons
+                                }
+                              });
+                            }}
+                          />
                         </div>
                       );
                     })}
