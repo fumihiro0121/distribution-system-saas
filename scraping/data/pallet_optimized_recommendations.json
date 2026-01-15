@@ -1,0 +1,1804 @@
+{
+  "targetQuantity": 1000,
+  "generatedAt": "2026-01-15T02:12:42.975Z",
+  "products": [
+    {
+      "productName": "ヨーグルト種菌1袋セット",
+      "sku": "",
+      "unitSpace": {
+        "historicalCarton": {
+          "length": 540,
+          "width": 410,
+          "height": 190,
+          "volume": 42066000
+        },
+        "bagsInHistoricalCarton": 120,
+        "volumePerBag": 350550,
+        "bagsInSet": 1,
+        "isPalletFit": false
+      },
+      "recommendations": [
+        {
+          "cartonCode": "MAS140-070",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×9段］（670×390×180mm）5mm A/F 白C5×C5",
+          "innerDimensions": "670×390×180mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "5mm A/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-070",
+          "capacity": 120,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 1,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 9,
+            "totalBoxes": 36
+          },
+          "note": "【パレットぴったり】推定: 約120袋入り（ヨーグルト種菌1袋セットの実績から計算）",
+          "historicalSource": "ヨーグルト種菌1袋セット"
+        },
+        {
+          "cartonCode": "MAS140-121",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×10段］（614×454×168mm）3mm B/F 白C5×C5",
+          "innerDimensions": "614×454×168mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-121",
+          "capacity": 120,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 2,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 10,
+            "totalBoxes": 40
+          },
+          "note": "【パレットぴったり】推定: 約120袋入り（ヨーグルト種菌1袋セットの実績から計算）",
+          "historicalSource": "ヨーグルト種菌1袋セット"
+        },
+        {
+          "cartonCode": "MA120-302",
+          "cartonName": "【宅配120サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×5段］（530×260×340mm）5mm A/F K5×K5",
+          "innerDimensions": "530×260×340mm",
+          "deliverySize": "宅配120サイズ",
+          "thickness": "5mm A/F",
+          "format": "K5×K5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA120-302",
+          "capacity": 120,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 3,
+          "palletConfiguration": {
+            "boxesPerLayer": 8,
+            "layers": 5,
+            "totalBoxes": 40
+          },
+          "note": "【パレットぴったり】推定: 約120袋入り（ヨーグルト種菌1袋セットの実績から計算）",
+          "historicalSource": "ヨーグルト種菌1袋セット"
+        }
+      ],
+      "combinations": [
+        {
+          "name": "第一候補（パレットぴったり優先）のみ",
+          "cartons": [
+            {
+              "cartonCode": "MAS140-070",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×9段］（670×390×180mm）5mm A/F 白C5×C5",
+              "innerDimensions": "670×390×180mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 120,
+              "boxCount": 9,
+              "totalBags": 1080,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-070",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 9,
+                "totalBoxes": 36
+              },
+              "palletInfo": "パレット配置: 1段4箱×9段"
+            }
+          ],
+          "totalBoxes": 9,
+          "totalBags": 1080,
+          "excess": 80
+        },
+        {
+          "name": "パレットぴったり段ボールの組み合わせ",
+          "cartons": [
+            {
+              "cartonCode": "MAS140-070",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×9段］（670×390×180mm）5mm A/F 白C5×C5",
+              "innerDimensions": "670×390×180mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 120,
+              "boxCount": 5,
+              "totalBags": 600,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-070",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 9,
+                "totalBoxes": 36
+              },
+              "palletInfo": "パレット配置: 1段4箱×9段"
+            },
+            {
+              "cartonCode": "MAS140-121",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×10段］（614×454×168mm）3mm B/F 白C5×C5",
+              "innerDimensions": "614×454×168mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 120,
+              "boxCount": 4,
+              "totalBags": 480,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-121",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 10,
+                "totalBoxes": 40
+              },
+              "palletInfo": "パレット配置: 1段4箱×10段"
+            }
+          ],
+          "totalBoxes": 9,
+          "totalBags": 1080,
+          "excess": 80
+        },
+        {
+          "name": "最適化（過剰最小化）",
+          "cartons": [
+            {
+              "cartonCode": "MAS140-121",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×10段］（614×454×168mm）3mm B/F 白C5×C5",
+              "innerDimensions": "614×454×168mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 120,
+              "boxCount": 9,
+              "totalBags": 1080,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-121",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 10,
+                "totalBoxes": 40
+              },
+              "palletInfo": "パレット配置: 1段4箱×10段"
+            }
+          ],
+          "totalBoxes": 9,
+          "totalBags": 1080,
+          "excess": 80
+        }
+      ]
+    },
+    {
+      "productName": "甘酒酵素1袋セット",
+      "sku": "",
+      "unitSpace": {
+        "historicalCarton": {
+          "length": 540,
+          "width": 410,
+          "height": 190,
+          "volume": 42066000
+        },
+        "bagsInHistoricalCarton": 120,
+        "volumePerBag": 350550,
+        "bagsInSet": 1,
+        "isPalletFit": false
+      },
+      "recommendations": [
+        {
+          "cartonCode": "MAS140-070",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×9段］（670×390×180mm）5mm A/F 白C5×C5",
+          "innerDimensions": "670×390×180mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "5mm A/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-070",
+          "capacity": 120,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 1,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 9,
+            "totalBoxes": 36
+          },
+          "note": "【パレットぴったり】推定: 約120袋入り（甘酒酵素1袋セットの実績から計算）",
+          "historicalSource": "甘酒酵素1袋セット"
+        },
+        {
+          "cartonCode": "MAS140-121",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×10段］（614×454×168mm）3mm B/F 白C5×C5",
+          "innerDimensions": "614×454×168mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-121",
+          "capacity": 120,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 2,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 10,
+            "totalBoxes": 40
+          },
+          "note": "【パレットぴったり】推定: 約120袋入り（甘酒酵素1袋セットの実績から計算）",
+          "historicalSource": "甘酒酵素1袋セット"
+        },
+        {
+          "cartonCode": "MA120-302",
+          "cartonName": "【宅配120サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×5段］（530×260×340mm）5mm A/F K5×K5",
+          "innerDimensions": "530×260×340mm",
+          "deliverySize": "宅配120サイズ",
+          "thickness": "5mm A/F",
+          "format": "K5×K5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA120-302",
+          "capacity": 120,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 3,
+          "palletConfiguration": {
+            "boxesPerLayer": 8,
+            "layers": 5,
+            "totalBoxes": 40
+          },
+          "note": "【パレットぴったり】推定: 約120袋入り（甘酒酵素1袋セットの実績から計算）",
+          "historicalSource": "甘酒酵素1袋セット"
+        }
+      ],
+      "combinations": [
+        {
+          "name": "第一候補（パレットぴったり優先）のみ",
+          "cartons": [
+            {
+              "cartonCode": "MAS140-070",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×9段］（670×390×180mm）5mm A/F 白C5×C5",
+              "innerDimensions": "670×390×180mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 120,
+              "boxCount": 9,
+              "totalBags": 1080,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-070",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 9,
+                "totalBoxes": 36
+              },
+              "palletInfo": "パレット配置: 1段4箱×9段"
+            }
+          ],
+          "totalBoxes": 9,
+          "totalBags": 1080,
+          "excess": 80
+        },
+        {
+          "name": "パレットぴったり段ボールの組み合わせ",
+          "cartons": [
+            {
+              "cartonCode": "MAS140-070",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×9段］（670×390×180mm）5mm A/F 白C5×C5",
+              "innerDimensions": "670×390×180mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 120,
+              "boxCount": 5,
+              "totalBags": 600,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-070",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 9,
+                "totalBoxes": 36
+              },
+              "palletInfo": "パレット配置: 1段4箱×9段"
+            },
+            {
+              "cartonCode": "MAS140-121",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×10段］（614×454×168mm）3mm B/F 白C5×C5",
+              "innerDimensions": "614×454×168mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 120,
+              "boxCount": 4,
+              "totalBags": 480,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-121",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 10,
+                "totalBoxes": 40
+              },
+              "palletInfo": "パレット配置: 1段4箱×10段"
+            }
+          ],
+          "totalBoxes": 9,
+          "totalBags": 1080,
+          "excess": 80
+        },
+        {
+          "name": "最適化（過剰最小化）",
+          "cartons": [
+            {
+              "cartonCode": "MAS140-121",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×10段］（614×454×168mm）3mm B/F 白C5×C5",
+              "innerDimensions": "614×454×168mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 120,
+              "boxCount": 9,
+              "totalBags": 1080,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-121",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 10,
+                "totalBoxes": 40
+              },
+              "palletInfo": "パレット配置: 1段4箱×10段"
+            }
+          ],
+          "totalBoxes": 9,
+          "totalBags": 1080,
+          "excess": 80
+        }
+      ]
+    },
+    {
+      "productName": "黒ゴマアーモンドきな粉150g×1袋セット",
+      "sku": "20250126-190B-1",
+      "unitSpace": {
+        "historicalCarton": {
+          "length": 530,
+          "width": 380,
+          "height": 350,
+          "volume": 70490000
+        },
+        "bagsInHistoricalCarton": 110,
+        "volumePerBag": 640818.1818181818,
+        "bagsInSet": 1,
+        "isPalletFit": false
+      },
+      "recommendations": [
+        {
+          "cartonCode": "MA140-172",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（644×424×288mm）3mm B/F C5×C5",
+          "innerDimensions": "644×424×288mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-172",
+          "capacity": 110,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 1,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 6,
+            "totalBoxes": 24
+          },
+          "note": "【パレットぴったり】推定: 約110袋入り（黒ゴマアーモンドきな粉150g×1袋セットの実績から計算）",
+          "historicalSource": "黒ゴマアーモンドきな粉150g×1袋セット"
+        },
+        {
+          "cartonCode": "MAS140-075",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（644×424×288mm）3mm B/F 白C5×C5",
+          "innerDimensions": "644×424×288mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-075",
+          "capacity": 110,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 2,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 6,
+            "totalBoxes": 24
+          },
+          "note": "【パレットぴったり】推定: 約110袋入り（黒ゴマアーモンドきな粉150g×1袋セットの実績から計算）",
+          "historicalSource": "黒ゴマアーモンドきな粉150g×1袋セット"
+        },
+        {
+          "cartonCode": "MA140-331",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（560×500×280mm）5mm A/F K6×強化芯180g×K6",
+          "innerDimensions": "560×500×280mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "5mm A/F",
+          "format": "K6×強化芯180g×K6",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-331",
+          "capacity": 110,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 3,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 6,
+            "totalBoxes": 24
+          },
+          "note": "【パレットぴったり】推定: 約110袋入り（黒ゴマアーモンドきな粉150g×1袋セットの実績から計算）",
+          "historicalSource": "黒ゴマアーモンドきな粉150g×1袋セット"
+        },
+        {
+          "cartonCode": "MA140-183",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×8段］（634×414×188mm）8mm W/F C5×C5",
+          "innerDimensions": "634×414×188mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "8mm W/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-183",
+          "capacity": 56,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 4,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 8,
+            "totalBoxes": 32
+          },
+          "note": "【パレットぴったり】推定: 約56袋入り（黒ゴマアーモンドきな粉150g×2袋セットの実績から計算）",
+          "historicalSource": "黒ゴマアーモンドきな粉150g×2袋セット"
+        },
+        {
+          "cartonCode": "MA140-268",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×9段］（610×450×180mm）5mm A/F K5×K5",
+          "innerDimensions": "610×450×180mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "5mm A/F",
+          "format": "K5×K5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-268",
+          "capacity": 56,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 5,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 9,
+            "totalBoxes": 36
+          },
+          "note": "【パレットぴったり】推定: 約56袋入り（黒ゴマアーモンドきな粉150g×2袋セットの実績から計算）",
+          "historicalSource": "黒ゴマアーモンドきな粉150g×2袋セット"
+        },
+        {
+          "cartonCode": "MAS140-118",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×9段］（610×450×180mm）5mm A/F 白C5×C5",
+          "innerDimensions": "610×450×180mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "5mm A/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-118",
+          "capacity": 56,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 6,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 9,
+            "totalBoxes": 36
+          },
+          "note": "【パレットぴったり】推定: 約56袋入り（黒ゴマアーモンドきな粉150g×2袋セットの実績から計算）",
+          "historicalSource": "黒ゴマアーモンドきな粉150g×2袋セット"
+        }
+      ],
+      "combinations": [
+        {
+          "name": "第一候補（パレットぴったり優先）のみ",
+          "cartons": [
+            {
+              "cartonCode": "MA140-172",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（644×424×288mm）3mm B/F C5×C5",
+              "innerDimensions": "644×424×288mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 110,
+              "boxCount": 10,
+              "totalBags": 1100,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-172",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 6,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段4箱×6段"
+            }
+          ],
+          "totalBoxes": 10,
+          "totalBags": 1100,
+          "excess": 100
+        },
+        {
+          "name": "パレットぴったり段ボールの組み合わせ",
+          "cartons": [
+            {
+              "cartonCode": "MA140-172",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（644×424×288mm）3mm B/F C5×C5",
+              "innerDimensions": "644×424×288mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 110,
+              "boxCount": 6,
+              "totalBags": 660,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-172",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 6,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段4箱×6段"
+            },
+            {
+              "cartonCode": "MAS140-075",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（644×424×288mm）3mm B/F 白C5×C5",
+              "innerDimensions": "644×424×288mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 110,
+              "boxCount": 4,
+              "totalBags": 440,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-075",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 6,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段4箱×6段"
+            }
+          ],
+          "totalBoxes": 10,
+          "totalBags": 1100,
+          "excess": 100
+        },
+        {
+          "name": "最適化（過剰最小化）",
+          "cartons": [
+            {
+              "cartonCode": "MAS140-075",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（644×424×288mm）3mm B/F 白C5×C5",
+              "innerDimensions": "644×424×288mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 110,
+              "boxCount": 10,
+              "totalBags": 1100,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-075",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 6,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段4箱×6段"
+            }
+          ],
+          "totalBoxes": 10,
+          "totalBags": 1100,
+          "excess": 100
+        }
+      ]
+    },
+    {
+      "productName": "きな粉150g×1袋セット",
+      "sku": "20250126-190A-1",
+      "unitSpace": {
+        "historicalCarton": {
+          "length": 530,
+          "width": 380,
+          "height": 350,
+          "volume": 70490000
+        },
+        "bagsInHistoricalCarton": 120,
+        "volumePerBag": 587416.6666666666,
+        "bagsInSet": 1,
+        "isPalletFit": false
+      },
+      "recommendations": [
+        {
+          "cartonCode": "MA140-172",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（644×424×288mm）3mm B/F C5×C5",
+          "innerDimensions": "644×424×288mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-172",
+          "capacity": 120,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 1,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 6,
+            "totalBoxes": 24
+          },
+          "note": "【パレットぴったり】推定: 約120袋入り（きな粉150g×1袋セットの実績から計算）",
+          "historicalSource": "きな粉150g×1袋セット"
+        },
+        {
+          "cartonCode": "MAS140-075",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（644×424×288mm）3mm B/F 白C5×C5",
+          "innerDimensions": "644×424×288mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-075",
+          "capacity": 120,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 2,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 6,
+            "totalBoxes": 24
+          },
+          "note": "【パレットぴったり】推定: 約120袋入り（きな粉150g×1袋セットの実績から計算）",
+          "historicalSource": "きな粉150g×1袋セット"
+        },
+        {
+          "cartonCode": "MA140-331",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（560×500×280mm）5mm A/F K6×強化芯180g×K6",
+          "innerDimensions": "560×500×280mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "5mm A/F",
+          "format": "K6×強化芯180g×K6",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-331",
+          "capacity": 120,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 3,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 6,
+            "totalBoxes": 24
+          },
+          "note": "【パレットぴったり】推定: 約120袋入り（きな粉150g×1袋セットの実績から計算）",
+          "historicalSource": "きな粉150g×1袋セット"
+        }
+      ],
+      "combinations": [
+        {
+          "name": "第一候補（パレットぴったり優先）のみ",
+          "cartons": [
+            {
+              "cartonCode": "MA140-172",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（644×424×288mm）3mm B/F C5×C5",
+              "innerDimensions": "644×424×288mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 120,
+              "boxCount": 9,
+              "totalBags": 1080,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-172",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 6,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段4箱×6段"
+            }
+          ],
+          "totalBoxes": 9,
+          "totalBags": 1080,
+          "excess": 80
+        },
+        {
+          "name": "パレットぴったり段ボールの組み合わせ",
+          "cartons": [
+            {
+              "cartonCode": "MA140-172",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（644×424×288mm）3mm B/F C5×C5",
+              "innerDimensions": "644×424×288mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 120,
+              "boxCount": 5,
+              "totalBags": 600,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-172",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 6,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段4箱×6段"
+            },
+            {
+              "cartonCode": "MAS140-075",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（644×424×288mm）3mm B/F 白C5×C5",
+              "innerDimensions": "644×424×288mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 120,
+              "boxCount": 4,
+              "totalBags": 480,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-075",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 6,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段4箱×6段"
+            }
+          ],
+          "totalBoxes": 9,
+          "totalBags": 1080,
+          "excess": 80
+        },
+        {
+          "name": "最適化（過剰最小化）",
+          "cartons": [
+            {
+              "cartonCode": "MAS140-075",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（644×424×288mm）3mm B/F 白C5×C5",
+              "innerDimensions": "644×424×288mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 120,
+              "boxCount": 9,
+              "totalBags": 1080,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-075",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 6,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段4箱×6段"
+            }
+          ],
+          "totalBoxes": 9,
+          "totalBags": 1080,
+          "excess": 80
+        }
+      ]
+    },
+    {
+      "productName": "きな粉 500g×1袋セット",
+      "sku": "20250126-90-1",
+      "unitSpace": {
+        "historicalCarton": {
+          "length": 530,
+          "width": 380,
+          "height": 350,
+          "volume": 70490000
+        },
+        "bagsInHistoricalCarton": 40,
+        "volumePerBag": 1762250,
+        "bagsInSet": 1,
+        "isPalletFit": false
+      },
+      "recommendations": [
+        {
+          "cartonCode": "MA140-369",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段6箱×4段］（530×350×430mm）5mm A/F K6×強化芯180g×K6",
+          "innerDimensions": "530×350×430mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "5mm A/F",
+          "format": "K6×強化芯180g×K6",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-369",
+          "capacity": 40,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 1,
+          "palletConfiguration": {
+            "boxesPerLayer": 6,
+            "layers": 4,
+            "totalBoxes": 24
+          },
+          "note": "【パレットぴったり】推定: 約40袋入り（きな粉 500g×1袋セットの実績から計算）",
+          "historicalSource": "きな粉 500g×1袋セット"
+        },
+        {
+          "cartonCode": "MA140-401",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×3段］（470×290×580mm）5mm A/F K6×強化芯180g×K6",
+          "innerDimensions": "470×290×580mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "5mm A/F",
+          "format": "K6×強化芯180g×K6",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-401",
+          "capacity": 40,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 2,
+          "palletConfiguration": {
+            "boxesPerLayer": 8,
+            "layers": 3,
+            "totalBoxes": 24
+          },
+          "note": "【パレットぴったり】推定: 約40袋入り（きな粉 500g×1袋セットの実績から計算）",
+          "historicalSource": "きな粉 500g×1袋セット"
+        },
+        {
+          "cartonCode": "MA140-172",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（644×424×288mm）3mm B/F C5×C5",
+          "innerDimensions": "644×424×288mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-172",
+          "capacity": 40,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 3,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 6,
+            "totalBoxes": 24
+          },
+          "note": "【パレットぴったり】推定: 約40袋入り（きな粉 500g×1袋セットの実績から計算）",
+          "historicalSource": "きな粉 500g×1袋セット"
+        }
+      ],
+      "combinations": [
+        {
+          "name": "第一候補（パレットぴったり優先）のみ",
+          "cartons": [
+            {
+              "cartonCode": "MA140-369",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段6箱×4段］（530×350×430mm）5mm A/F K6×強化芯180g×K6",
+              "innerDimensions": "530×350×430mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 40,
+              "boxCount": 25,
+              "totalBags": 1000,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-369",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 6,
+                "layers": 4,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段6箱×4段"
+            }
+          ],
+          "totalBoxes": 25,
+          "totalBags": 1000,
+          "excess": 0
+        },
+        {
+          "name": "パレットぴったり段ボールの組み合わせ",
+          "cartons": [
+            {
+              "cartonCode": "MA140-369",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段6箱×4段］（530×350×430mm）5mm A/F K6×強化芯180g×K6",
+              "innerDimensions": "530×350×430mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 40,
+              "boxCount": 17,
+              "totalBags": 680,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-369",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 6,
+                "layers": 4,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段6箱×4段"
+            },
+            {
+              "cartonCode": "MA140-401",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×3段］（470×290×580mm）5mm A/F K6×強化芯180g×K6",
+              "innerDimensions": "470×290×580mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 40,
+              "boxCount": 8,
+              "totalBags": 320,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-401",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 8,
+                "layers": 3,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段8箱×3段"
+            }
+          ],
+          "totalBoxes": 25,
+          "totalBags": 1000,
+          "excess": 0
+        },
+        {
+          "name": "最適化（過剰最小化）",
+          "cartons": [
+            {
+              "cartonCode": "MA140-401",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×3段］（470×290×580mm）5mm A/F K6×強化芯180g×K6",
+              "innerDimensions": "470×290×580mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 40,
+              "boxCount": 25,
+              "totalBags": 1000,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-401",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 8,
+                "layers": 3,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段8箱×3段"
+            }
+          ],
+          "totalBoxes": 25,
+          "totalBags": 1000,
+          "excess": 0
+        }
+      ]
+    },
+    {
+      "productName": "米の粉 450g×1袋セット",
+      "sku": "20250829450-1",
+      "unitSpace": {
+        "historicalCarton": {
+          "length": 530,
+          "width": 380,
+          "height": 350,
+          "volume": 70490000
+        },
+        "bagsInHistoricalCarton": 45,
+        "volumePerBag": 1566444.4444444445,
+        "bagsInSet": 1,
+        "isPalletFit": false
+      },
+      "recommendations": [
+        {
+          "cartonCode": "MA140-369",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段6箱×4段］（530×350×430mm）5mm A/F K6×強化芯180g×K6",
+          "innerDimensions": "530×350×430mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "5mm A/F",
+          "format": "K6×強化芯180g×K6",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-369",
+          "capacity": 45,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 1,
+          "palletConfiguration": {
+            "boxesPerLayer": 6,
+            "layers": 4,
+            "totalBoxes": 24
+          },
+          "note": "【パレットぴったり】推定: 約45袋入り（米の粉 450g×1袋セットの実績から計算）",
+          "historicalSource": "米の粉 450g×1袋セット"
+        },
+        {
+          "cartonCode": "MA140-401",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×3段］（470×290×580mm）5mm A/F K6×強化芯180g×K6",
+          "innerDimensions": "470×290×580mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "5mm A/F",
+          "format": "K6×強化芯180g×K6",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-401",
+          "capacity": 45,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 2,
+          "palletConfiguration": {
+            "boxesPerLayer": 8,
+            "layers": 3,
+            "totalBoxes": 24
+          },
+          "note": "【パレットぴったり】推定: 約45袋入り（米の粉 450g×1袋セットの実績から計算）",
+          "historicalSource": "米の粉 450g×1袋セット"
+        },
+        {
+          "cartonCode": "MA140-172",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（644×424×288mm）3mm B/F C5×C5",
+          "innerDimensions": "644×424×288mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-172",
+          "capacity": 45,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 3,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 6,
+            "totalBoxes": 24
+          },
+          "note": "【パレットぴったり】推定: 約45袋入り（米の粉 450g×1袋セットの実績から計算）",
+          "historicalSource": "米の粉 450g×1袋セット"
+        }
+      ],
+      "combinations": [
+        {
+          "name": "第一候補（パレットぴったり優先）のみ",
+          "cartons": [
+            {
+              "cartonCode": "MA140-369",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段6箱×4段］（530×350×430mm）5mm A/F K6×強化芯180g×K6",
+              "innerDimensions": "530×350×430mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 45,
+              "boxCount": 23,
+              "totalBags": 1035,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-369",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 6,
+                "layers": 4,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段6箱×4段"
+            }
+          ],
+          "totalBoxes": 23,
+          "totalBags": 1035,
+          "excess": 35
+        },
+        {
+          "name": "パレットぴったり段ボールの組み合わせ",
+          "cartons": [
+            {
+              "cartonCode": "MA140-369",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段6箱×4段］（530×350×430mm）5mm A/F K6×強化芯180g×K6",
+              "innerDimensions": "530×350×430mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 45,
+              "boxCount": 15,
+              "totalBags": 675,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-369",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 6,
+                "layers": 4,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段6箱×4段"
+            },
+            {
+              "cartonCode": "MA140-401",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×3段］（470×290×580mm）5mm A/F K6×強化芯180g×K6",
+              "innerDimensions": "470×290×580mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 45,
+              "boxCount": 8,
+              "totalBags": 360,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-401",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 8,
+                "layers": 3,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段8箱×3段"
+            }
+          ],
+          "totalBoxes": 23,
+          "totalBags": 1035,
+          "excess": 35
+        },
+        {
+          "name": "最適化（過剰最小化）",
+          "cartons": [
+            {
+              "cartonCode": "MA140-401",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×3段］（470×290×580mm）5mm A/F K6×強化芯180g×K6",
+              "innerDimensions": "470×290×580mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 45,
+              "boxCount": 23,
+              "totalBags": 1035,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-401",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 8,
+                "layers": 3,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段8箱×3段"
+            }
+          ],
+          "totalBoxes": 23,
+          "totalBags": 1035,
+          "excess": 35
+        }
+      ]
+    },
+    {
+      "productName": "茨城県産べにはるかほしいも1袋セット",
+      "sku": "20251028-180-1",
+      "unitSpace": {
+        "historicalCarton": {
+          "length": 530,
+          "width": 260,
+          "height": 440,
+          "volume": 60632000
+        },
+        "bagsInHistoricalCarton": 120,
+        "volumePerBag": 505266.6666666667,
+        "bagsInSet": 1,
+        "isPalletFit": false
+      },
+      "recommendations": [
+        {
+          "cartonCode": "MA140-332",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×7段］（564×504×238mm）3mm B/F C5×C5",
+          "innerDimensions": "564×504×238mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-332",
+          "capacity": 120,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 1,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 7,
+            "totalBoxes": 28
+          },
+          "note": "【パレットぴったり】推定: 約120袋入り（茨城県産べにはるかほしいも1袋セットの実績から計算）",
+          "historicalSource": "茨城県産べにはるかほしいも1袋セット"
+        },
+        {
+          "cartonCode": "MAS140-151",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×7段］（564×504×238mm）3mm B/F 白C5×C5",
+          "innerDimensions": "564×504×238mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-151",
+          "capacity": 120,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 2,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 7,
+            "totalBoxes": 28
+          },
+          "note": "【パレットぴったり】推定: 約120袋入り（茨城県産べにはるかほしいも1袋セットの実績から計算）",
+          "historicalSource": "茨城県産べにはるかほしいも1袋セット"
+        },
+        {
+          "cartonCode": "MA140-353",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×7段］（534×534×238mm）3mm B/F C5×C5",
+          "innerDimensions": "534×534×238mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-353",
+          "capacity": 120,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 3,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 7,
+            "totalBoxes": 28
+          },
+          "note": "【パレットぴったり】推定: 約120袋入り（茨城県産べにはるかほしいも1袋セットの実績から計算）",
+          "historicalSource": "茨城県産べにはるかほしいも1袋セット"
+        }
+      ],
+      "combinations": [
+        {
+          "name": "第一候補（パレットぴったり優先）のみ",
+          "cartons": [
+            {
+              "cartonCode": "MA140-332",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×7段］（564×504×238mm）3mm B/F C5×C5",
+              "innerDimensions": "564×504×238mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 120,
+              "boxCount": 9,
+              "totalBags": 1080,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-332",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 7,
+                "totalBoxes": 28
+              },
+              "palletInfo": "パレット配置: 1段4箱×7段"
+            }
+          ],
+          "totalBoxes": 9,
+          "totalBags": 1080,
+          "excess": 80
+        },
+        {
+          "name": "パレットぴったり段ボールの組み合わせ",
+          "cartons": [
+            {
+              "cartonCode": "MA140-332",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×7段］（564×504×238mm）3mm B/F C5×C5",
+              "innerDimensions": "564×504×238mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 120,
+              "boxCount": 5,
+              "totalBags": 600,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-332",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 7,
+                "totalBoxes": 28
+              },
+              "palletInfo": "パレット配置: 1段4箱×7段"
+            },
+            {
+              "cartonCode": "MAS140-151",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×7段］（564×504×238mm）3mm B/F 白C5×C5",
+              "innerDimensions": "564×504×238mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 120,
+              "boxCount": 4,
+              "totalBags": 480,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-151",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 7,
+                "totalBoxes": 28
+              },
+              "palletInfo": "パレット配置: 1段4箱×7段"
+            }
+          ],
+          "totalBoxes": 9,
+          "totalBags": 1080,
+          "excess": 80
+        },
+        {
+          "name": "最適化（過剰最小化）",
+          "cartons": [
+            {
+              "cartonCode": "MAS140-151",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×7段］（564×504×238mm）3mm B/F 白C5×C5",
+              "innerDimensions": "564×504×238mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 120,
+              "boxCount": 9,
+              "totalBags": 1080,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-151",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 7,
+                "totalBoxes": 28
+              },
+              "palletInfo": "パレット配置: 1段4箱×7段"
+            }
+          ],
+          "totalBoxes": 9,
+          "totalBags": 1080,
+          "excess": 80
+        }
+      ]
+    },
+    {
+      "productName": "茨城県産べにはるかほしいも3袋セット",
+      "sku": "20251028-180-3",
+      "unitSpace": {
+        "historicalCarton": {
+          "length": 530,
+          "width": 260,
+          "height": 440,
+          "volume": 60632000
+        },
+        "bagsInHistoricalCarton": 40,
+        "volumePerBag": 1515800,
+        "bagsInSet": 1,
+        "isPalletFit": false
+      },
+      "recommendations": [
+        {
+          "cartonCode": "MA140-148",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（664×384×268mm）8mm W/F C5×C5",
+          "innerDimensions": "664×384×268mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "8mm W/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-148",
+          "capacity": 40,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 1,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 6,
+            "totalBoxes": 24
+          },
+          "note": "【パレットぴったり】推定: 約40袋入り（茨城県産べにはるかほしいも3袋セットの実績から計算）",
+          "historicalSource": "茨城県産べにはるかほしいも3袋セット"
+        },
+        {
+          "cartonCode": "MA140-332",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×7段］（564×504×238mm）3mm B/F C5×C5",
+          "innerDimensions": "564×504×238mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-332",
+          "capacity": 40,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 2,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 7,
+            "totalBoxes": 28
+          },
+          "note": "【パレットぴったり】推定: 約40袋入り（茨城県産べにはるかほしいも3袋セットの実績から計算）",
+          "historicalSource": "茨城県産べにはるかほしいも3袋セット"
+        },
+        {
+          "cartonCode": "MAS140-151",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×7段］（564×504×238mm）3mm B/F 白C5×C5",
+          "innerDimensions": "564×504×238mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-151",
+          "capacity": 40,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 3,
+          "palletConfiguration": {
+            "boxesPerLayer": 4,
+            "layers": 7,
+            "totalBoxes": 28
+          },
+          "note": "【パレットぴったり】推定: 約40袋入り（茨城県産べにはるかほしいも3袋セットの実績から計算）",
+          "historicalSource": "茨城県産べにはるかほしいも3袋セット"
+        }
+      ],
+      "combinations": [
+        {
+          "name": "第一候補（パレットぴったり優先）のみ",
+          "cartons": [
+            {
+              "cartonCode": "MA140-148",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（664×384×268mm）8mm W/F C5×C5",
+              "innerDimensions": "664×384×268mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 40,
+              "boxCount": 25,
+              "totalBags": 1000,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-148",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 6,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段4箱×6段"
+            }
+          ],
+          "totalBoxes": 25,
+          "totalBags": 1000,
+          "excess": 0
+        },
+        {
+          "name": "パレットぴったり段ボールの組み合わせ",
+          "cartons": [
+            {
+              "cartonCode": "MA140-148",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×6段］（664×384×268mm）8mm W/F C5×C5",
+              "innerDimensions": "664×384×268mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 40,
+              "boxCount": 17,
+              "totalBags": 680,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-148",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 6,
+                "totalBoxes": 24
+              },
+              "palletInfo": "パレット配置: 1段4箱×6段"
+            },
+            {
+              "cartonCode": "MA140-332",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×7段］（564×504×238mm）3mm B/F C5×C5",
+              "innerDimensions": "564×504×238mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 40,
+              "boxCount": 8,
+              "totalBags": 320,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-332",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 7,
+                "totalBoxes": 28
+              },
+              "palletInfo": "パレット配置: 1段4箱×7段"
+            }
+          ],
+          "totalBoxes": 25,
+          "totalBags": 1000,
+          "excess": 0
+        },
+        {
+          "name": "最適化（過剰最小化）",
+          "cartons": [
+            {
+              "cartonCode": "MA140-332",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段4箱×7段］（564×504×238mm）3mm B/F C5×C5",
+              "innerDimensions": "564×504×238mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 40,
+              "boxCount": 25,
+              "totalBags": 1000,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-332",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 4,
+                "layers": 7,
+                "totalBoxes": 28
+              },
+              "palletInfo": "パレット配置: 1段4箱×7段"
+            }
+          ],
+          "totalBoxes": 25,
+          "totalBags": 1000,
+          "excess": 0
+        }
+      ]
+    },
+    {
+      "productName": "茨城県産べにはるかほしいも10袋セット",
+      "sku": "20251028-180-10",
+      "unitSpace": {
+        "historicalCarton": {
+          "length": 210,
+          "width": 140,
+          "height": 110,
+          "volume": 3234000
+        },
+        "bagsInHistoricalCarton": 1,
+        "volumePerBag": 3234000,
+        "bagsInSet": 1,
+        "isPalletFit": true
+      },
+      "recommendations": [],
+      "combinations": []
+    },
+    {
+      "productName": "粉黒糖1袋セット",
+      "sku": "20250928167",
+      "unitSpace": {
+        "historicalCarton": {
+          "length": 530,
+          "width": 270,
+          "height": 380,
+          "volume": 54378000
+        },
+        "bagsInHistoricalCarton": 80,
+        "volumePerBag": 679725,
+        "bagsInSet": 1,
+        "isPalletFit": false
+      },
+      "recommendations": [
+        {
+          "cartonCode": "MA140-385",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×4段］（504×274×438mm）3mm B/F C5×C5",
+          "innerDimensions": "504×274×438mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-385",
+          "capacity": 80,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 1,
+          "palletConfiguration": {
+            "boxesPerLayer": 8,
+            "layers": 4,
+            "totalBoxes": 32
+          },
+          "note": "【パレットぴったり】推定: 約80袋入り（粉黒糖1袋セットの実績から計算）",
+          "historicalSource": "粉黒糖1袋セット"
+        },
+        {
+          "cartonCode": "MA140-303",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×4段］（594×234×438mm）3mm B/F C5×C5",
+          "innerDimensions": "594×234×438mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-303",
+          "capacity": 80,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 2,
+          "palletConfiguration": {
+            "boxesPerLayer": 8,
+            "layers": 4,
+            "totalBoxes": 32
+          },
+          "note": "【パレットぴったり】推定: 約80袋入り（粉黒糖1袋セットの実績から計算）",
+          "historicalSource": "粉黒糖1袋セット"
+        },
+        {
+          "cartonCode": "MAS140-137",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×4段］（594×234×438mm）3mm B/F 白C5×C5",
+          "innerDimensions": "594×234×438mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-137",
+          "capacity": 80,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 3,
+          "palletConfiguration": {
+            "boxesPerLayer": 8,
+            "layers": 4,
+            "totalBoxes": 32
+          },
+          "note": "【パレットぴったり】推定: 約80袋入り（粉黒糖1袋セットの実績から計算）",
+          "historicalSource": "粉黒糖1袋セット"
+        }
+      ],
+      "combinations": [
+        {
+          "name": "第一候補（パレットぴったり優先）のみ",
+          "cartons": [
+            {
+              "cartonCode": "MA140-385",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×4段］（504×274×438mm）3mm B/F C5×C5",
+              "innerDimensions": "504×274×438mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 80,
+              "boxCount": 13,
+              "totalBags": 1040,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-385",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 8,
+                "layers": 4,
+                "totalBoxes": 32
+              },
+              "palletInfo": "パレット配置: 1段8箱×4段"
+            }
+          ],
+          "totalBoxes": 13,
+          "totalBags": 1040,
+          "excess": 40
+        },
+        {
+          "name": "パレットぴったり段ボールの組み合わせ",
+          "cartons": [
+            {
+              "cartonCode": "MA140-385",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×4段］（504×274×438mm）3mm B/F C5×C5",
+              "innerDimensions": "504×274×438mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 80,
+              "boxCount": 8,
+              "totalBags": 640,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-385",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 8,
+                "layers": 4,
+                "totalBoxes": 32
+              },
+              "palletInfo": "パレット配置: 1段8箱×4段"
+            },
+            {
+              "cartonCode": "MA140-303",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×4段］（594×234×438mm）3mm B/F C5×C5",
+              "innerDimensions": "594×234×438mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 80,
+              "boxCount": 5,
+              "totalBags": 400,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-303",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 8,
+                "layers": 4,
+                "totalBoxes": 32
+              },
+              "palletInfo": "パレット配置: 1段8箱×4段"
+            }
+          ],
+          "totalBoxes": 13,
+          "totalBags": 1040,
+          "excess": 40
+        },
+        {
+          "name": "最適化（過剰最小化）",
+          "cartons": [
+            {
+              "cartonCode": "MA140-303",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×4段］（594×234×438mm）3mm B/F C5×C5",
+              "innerDimensions": "594×234×438mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 80,
+              "boxCount": 13,
+              "totalBags": 1040,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-303",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 8,
+                "layers": 4,
+                "totalBoxes": 32
+              },
+              "palletInfo": "パレット配置: 1段8箱×4段"
+            }
+          ],
+          "totalBoxes": 13,
+          "totalBags": 1040,
+          "excess": 40
+        }
+      ]
+    },
+    {
+      "productName": "かちわり黒糖1袋セット",
+      "sku": "20250928-195R",
+      "unitSpace": {
+        "historicalCarton": {
+          "length": 530,
+          "width": 270,
+          "height": 380,
+          "volume": 54378000
+        },
+        "bagsInHistoricalCarton": 65,
+        "volumePerBag": 836584.6153846154,
+        "bagsInSet": 1,
+        "isPalletFit": false
+      },
+      "recommendations": [
+        {
+          "cartonCode": "MA140-385",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×4段］（504×274×438mm）3mm B/F C5×C5",
+          "innerDimensions": "504×274×438mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-385",
+          "capacity": 65,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 1,
+          "palletConfiguration": {
+            "boxesPerLayer": 8,
+            "layers": 4,
+            "totalBoxes": 32
+          },
+          "note": "【パレットぴったり】推定: 約65袋入り（かちわり黒糖1袋セットの実績から計算）",
+          "historicalSource": "かちわり黒糖1袋セット"
+        },
+        {
+          "cartonCode": "MA140-303",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×4段］（594×234×438mm）3mm B/F C5×C5",
+          "innerDimensions": "594×234×438mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MA140-303",
+          "capacity": 65,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 2,
+          "palletConfiguration": {
+            "boxesPerLayer": 8,
+            "layers": 4,
+            "totalBoxes": 32
+          },
+          "note": "【パレットぴったり】推定: 約65袋入り（かちわり黒糖1袋セットの実績から計算）",
+          "historicalSource": "かちわり黒糖1袋セット"
+        },
+        {
+          "cartonCode": "MAS140-137",
+          "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×4段］（594×234×438mm）3mm B/F 白C5×C5",
+          "innerDimensions": "594×234×438mm",
+          "deliverySize": "宅配140サイズ",
+          "thickness": "3mm B/F",
+          "format": "C5×C5",
+          "url": "https://www.notosiki.co.jp/item/detail?num=MAS140-137",
+          "capacity": 65,
+          "isPalletFit": true,
+          "isHistorical": false,
+          "priority": 3,
+          "palletConfiguration": {
+            "boxesPerLayer": 8,
+            "layers": 4,
+            "totalBoxes": 32
+          },
+          "note": "【パレットぴったり】推定: 約65袋入り（かちわり黒糖1袋セットの実績から計算）",
+          "historicalSource": "かちわり黒糖1袋セット"
+        }
+      ],
+      "combinations": [
+        {
+          "name": "第一候補（パレットぴったり優先）のみ",
+          "cartons": [
+            {
+              "cartonCode": "MA140-385",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×4段］（504×274×438mm）3mm B/F C5×C5",
+              "innerDimensions": "504×274×438mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 65,
+              "boxCount": 16,
+              "totalBags": 1040,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-385",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 8,
+                "layers": 4,
+                "totalBoxes": 32
+              },
+              "palletInfo": "パレット配置: 1段8箱×4段"
+            }
+          ],
+          "totalBoxes": 16,
+          "totalBags": 1040,
+          "excess": 40
+        },
+        {
+          "name": "パレットぴったり段ボールの組み合わせ",
+          "cartons": [
+            {
+              "cartonCode": "MA140-385",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×4段］（504×274×438mm）3mm B/F C5×C5",
+              "innerDimensions": "504×274×438mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 65,
+              "boxCount": 10,
+              "totalBags": 650,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-385",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 8,
+                "layers": 4,
+                "totalBoxes": 32
+              },
+              "palletInfo": "パレット配置: 1段8箱×4段"
+            },
+            {
+              "cartonCode": "MA140-303",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×4段］（594×234×438mm）3mm B/F C5×C5",
+              "innerDimensions": "594×234×438mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 65,
+              "boxCount": 6,
+              "totalBags": 390,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-303",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 8,
+                "layers": 4,
+                "totalBoxes": 32
+              },
+              "palletInfo": "パレット配置: 1段8箱×4段"
+            }
+          ],
+          "totalBoxes": 16,
+          "totalBags": 1040,
+          "excess": 40
+        },
+        {
+          "name": "最適化（過剰最小化）",
+          "cartons": [
+            {
+              "cartonCode": "MA140-303",
+              "cartonName": "【宅配140サイズ】1100×1100パレットぴったりサイズダンボール箱［1段8箱×4段］（594×234×438mm）3mm B/F C5×C5",
+              "innerDimensions": "594×234×438mm",
+              "deliverySize": "宅配140サイズ",
+              "capacity": 65,
+              "boxCount": 16,
+              "totalBags": 1040,
+              "url": "https://www.notosiki.co.jp/item/detail?num=MA140-303",
+              "isPalletFit": true,
+              "palletConfiguration": {
+                "boxesPerLayer": 8,
+                "layers": 4,
+                "totalBoxes": 32
+              },
+              "palletInfo": "パレット配置: 1段8箱×4段"
+            }
+          ],
+          "totalBoxes": 16,
+          "totalBags": 1040,
+          "excess": 40
+        }
+      ]
+    }
+  ]
+}
