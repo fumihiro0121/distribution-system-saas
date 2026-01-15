@@ -111,6 +111,13 @@ npm run dev -- -p 3002
 - **梱包業者**: http://localhost:3001/packing
 - **スーパー**: http://localhost:3001/supermarket ⭐
 
+### 管理者専用ページ
+
+- **段ボール選択システム**: http://localhost:3001/admin/shipments/carton-selector
+- **出荷計画作成**: http://localhost:3001/admin/shipments/new
+- **出荷計画一覧**: http://localhost:3001/admin/shipments
+- **商品マスタ**: http://localhost:3001/admin/masters/products
+
 
 
 

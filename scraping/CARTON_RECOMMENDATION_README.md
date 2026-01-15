@@ -262,7 +262,7 @@ import CartonSelector from '@/app/components/CartonSelector';
 
 ### デモページ
 
-`/admin/shipments/carton-selector`
+`http://localhost:3001/admin/shipments/carton-selector`
 
 段ボール選択システムのデモページです。
 
@@ -270,6 +270,11 @@ import CartonSelector from '@/app/components/CartonSelector';
 - リアルタイムで段ボール候補が表示
 - インタラクティブに段ボールを選択・調整
 - 使用例も表示
+
+**アクセス方法:**
+1. フロントエンド開発サーバーを起動: `cd frontend && npm run dev`
+2. ブラウザで `http://localhost:3001/login` からログイン
+3. `http://localhost:3001/admin/shipments/carton-selector` にアクセス
 
 ## 改良版推奨ロジック（advanced）
 
