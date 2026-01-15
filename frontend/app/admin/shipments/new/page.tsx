@@ -379,6 +379,14 @@ export default function NewShipmentPage() {
                         product.janCode?.toLowerCase().includes(productSearch.toLowerCase()) ||
                         product.asin?.toLowerCase().includes(productSearch.toLowerCase())
                       )
+                      .sort((a, b) => {
+                        // 選択された商品を上部に表示
+                        const aSelected = formData.selectedProducts?.some(p => p.productId === a.id) || false;
+                        const bSelected = formData.selectedProducts?.some(p => p.productId === b.id) || false;
+                        if (aSelected && !bSelected) return -1;
+                        if (!aSelected && bSelected) return 1;
+                        return 0;
+                      })
                       .map((product) => {
                         const isSelected = formData.selectedProducts?.some(p => p.productId === product.id) || false;
                         const selectedProduct = formData.selectedProducts?.find(p => p.productId === product.id);
