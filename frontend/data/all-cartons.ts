@@ -1,4 +1,5 @@
 // 全段ボールデータ（cardboard_products_2026-01-14T22-44-17.csvから）
+import { products } from './products';
 
 export interface Carton {
   code: string;
@@ -40,6 +41,68 @@ function extractPalletConfig(name: string): {
 // 内寸から容積を計算（mm³）
 export function calculateVolume(length: number, width: number, height: number): number {
   return length * width * height;
+}
+
+// 段ボールの重さを推定（kg）
+// 内寸から外寸を推定し、表面積から重さを計算
+export function estimateCartonWeight(length: number, width: number, height: number, thickness: string): number {
+  // 厚み分を追加して外寸を推定（mm）
+  const thicknessValue = thickness.includes('3mm') ? 3 : thickness.includes('5mm') ? 5 : thickness.includes('8mm') ? 8 : 5;
+  const outerLength = length + thicknessValue * 2;
+  const outerWidth = width + thicknessValue * 2;
+  const outerHeight = height + thicknessValue * 2;
+  
+  // 表面積を計算（m²）
+  const surfaceArea = 2 * (
+    (outerLength * outerWidth) + 
+    (outerLength * outerHeight) + 
+    (outerWidth * outerHeight)
+  ) / 1000000; // mm² to m²
+  
+  // 段ボールの重さを推定（kg/m²）
+  let weightPerM2 = 0.4; // デフォルト 400g/m²
+  if (thickness.includes('3mm') || thickness.includes('B/F')) {
+    weightPerM2 = 0.25; // 3mm B/F: 約250g/m²
+  } else if (thickness.includes('5mm') || thickness.includes('A/F')) {
+    weightPerM2 = 0.4; // 5mm A/F: 約400g/m²
+  } else if (thickness.includes('8mm') || thickness.includes('W/F')) {
+    weightPerM2 = 0.6; // 8mm W/F: 約600g/m²
+  } else if (thickness.includes('強化')) {
+    weightPerM2 = 0.5; // 強化段ボール: 約500g/m²
+  }
+  
+  return surfaceArea * weightPerM2;
+}
+
+// 段ボールがAmazon FBA/AWDの制約を満たすかチェック
+// 1辺が63.5cm (635mm)以下、重さが23kg以下
+export function checkAmazonFBACompliance(
+  length: number, 
+  width: number, 
+  height: number, 
+  cartonWeight: number,
+  productWeight: number,
+  quantity: number
+): {
+  isCompliant: boolean;
+  sizeOk: boolean;
+  weightOk: boolean;
+  maxDimension: number;
+  totalWeight: number;
+} {
+  const maxDimension = Math.max(length, width, height) / 10; // mm to cm
+  const sizeOk = maxDimension <= 63.5;
+  
+  const totalWeight = cartonWeight + (productWeight * quantity);
+  const weightOk = totalWeight <= 23;
+  
+  return {
+    isCompliant: sizeOk && weightOk,
+    sizeOk,
+    weightOk,
+    maxDimension,
+    totalWeight
+  };
 }
 
 // サンプルデータ（実際には全1109件をインポート）
@@ -328,5 +391,22 @@ export function getProductUnitVolume(productName: string): number {
   const volumePerBag = totalVolume / bagsInCarton;
   
   return volumePerBag;
+}
+
+// 商品の単品重さを取得（kg）
+export function getProductUnitWeight(productName: string): number {
+  const product = products.find(p => p.productName === productName);
+  
+  if (!product || !product.unitWeight) {
+    return 0.2; // デフォルト値 200g
+  }
+  
+  // "0.16kg" のような文字列から数値を抽出
+  const match = product.unitWeight.match(/(\d+\.?\d*)/);
+  if (match) {
+    return parseFloat(match[1]);
+  }
+  
+  return 0.2;
 }
 

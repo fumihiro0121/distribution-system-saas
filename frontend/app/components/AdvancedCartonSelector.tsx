@@ -1,7 +1,16 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { allCartons, Carton, calculateCartonCapacity, calculateVolume, getProductUnitVolume } from '@/data/all-cartons';
+import { 
+  allCartons, 
+  Carton, 
+  calculateCartonCapacity, 
+  calculateVolume, 
+  getProductUnitVolume, 
+  getProductUnitWeight,
+  estimateCartonWeight,
+  checkAmazonFBACompliance 
+} from '@/data/all-cartons';
 
 interface SelectedCarton {
   code: string;
@@ -10,8 +19,11 @@ interface SelectedCarton {
   deliverySize: string;
   capacity: number;
   boxCount: number;
+  bagsPerBox: number; // 各段ボールに入れる実際の袋数
   totalBags: number;
   price: number;
+  cartonWeight: number; // 段ボール自体の重さ (kg)
+  totalWeight: number; // 商品を入れた総重量 (kg)
   palletConfig: {
     boxesPerLayer: number;
     layers: number;
@@ -42,8 +54,9 @@ export default function AdvancedCartonSelector({
   const [sortBy, setSortBy] = useState<SortOption>('recommended');
   const [showAllCartons, setShowAllCartons] = useState(false);
 
-  // 商品の単位容積を取得
+  // 商品の単位容積と重さを取得
   const productUnitVolume = getProductUnitVolume(productName);
+  const productUnitWeight = getProductUnitWeight(productName);
 
   // 各段ボールの容量を計算
   const cartonsWithCapacity = useMemo(() => {
@@ -52,14 +65,34 @@ export default function AdvancedCartonSelector({
       const capacity = calculateCartonCapacity(cartonVolume, productUnitVolume);
       const isRecommended = recommendedCartonCodes.includes(carton.code);
       
+      // 段ボールの重さを推定
+      const cartonWeight = estimateCartonWeight(
+        carton.innerLength, 
+        carton.innerWidth, 
+        carton.innerHeight, 
+        carton.thickness
+      );
+      
+      // Amazon FBA/AWD制約をチェック
+      const fbaCompliance = checkAmazonFBACompliance(
+        carton.innerLength,
+        carton.innerWidth,
+        carton.innerHeight,
+        cartonWeight,
+        productUnitWeight,
+        capacity
+      );
+      
       return {
         ...carton,
         volume: cartonVolume,
         capacity,
-        isRecommended
+        isRecommended,
+        cartonWeight,
+        fbaCompliance
       };
     }).filter(carton => carton.capacity > 0); // 容量0以下は除外
-  }, [productUnitVolume, recommendedCartonCodes]);
+  }, [productUnitVolume, productUnitWeight, recommendedCartonCodes]);
 
   // 検索とソートを適用
   const filteredAndSortedCartons = useMemo(() => {
@@ -82,9 +115,14 @@ export default function AdvancedCartonSelector({
     switch (sortBy) {
       case 'recommended':
         sorted.sort((a, b) => {
+          // Amazon FBA/AWD制約を満たすものを優先
+          if (a.fbaCompliance.isCompliant && !b.fbaCompliance.isCompliant) return -1;
+          if (!a.fbaCompliance.isCompliant && b.fbaCompliance.isCompliant) return 1;
+          // おすすめを優先
           if (a.isRecommended && !b.isRecommended) return -1;
           if (!a.isRecommended && b.isRecommended) return 1;
-          return b.capacity - a.capacity; // 容量の降順
+          // 容量の降順
+          return b.capacity - a.capacity;
         });
         break;
       case 'volume-asc':
@@ -117,6 +155,10 @@ export default function AdvancedCartonSelector({
 
   // 段ボールを追加
   const addCarton = (carton: typeof cartonsWithCapacity[0], quantity: number = 1) => {
+    const bagsPerBox = carton.capacity;
+    const cartonWeight = carton.cartonWeight;
+    const totalWeight = cartonWeight + (productUnitWeight * bagsPerBox);
+    
     const newCarton: SelectedCarton = {
       code: carton.code,
       name: carton.name,
@@ -124,8 +166,11 @@ export default function AdvancedCartonSelector({
       deliverySize: carton.deliverySize,
       capacity: carton.capacity,
       boxCount: quantity,
-      totalBags: carton.capacity * quantity,
+      bagsPerBox: bagsPerBox,
+      totalBags: bagsPerBox * quantity,
       price: carton.price,
+      cartonWeight: cartonWeight,
+      totalWeight: totalWeight,
       palletConfig: carton.palletConfig
     };
     onCartonsChange([...selectedCartons, newCarton]);
@@ -144,7 +189,24 @@ export default function AdvancedCartonSelector({
     updated[index] = {
       ...updated[index],
       boxCount: newBoxCount,
-      totalBags: updated[index].capacity * newBoxCount
+      totalBags: updated[index].bagsPerBox * newBoxCount
+    };
+    onCartonsChange(updated);
+  };
+
+  // 各段ボールに入れる袋数を変更
+  const updateBagsPerBox = (index: number, newBagsPerBox: number) => {
+    if (newBagsPerBox < 0 || newBagsPerBox > selectedCartons[index].capacity) return;
+    
+    const updated = [...selectedCartons];
+    const cartonWeight = updated[index].cartonWeight;
+    const totalWeight = cartonWeight + (productUnitWeight * newBagsPerBox);
+    
+    updated[index] = {
+      ...updated[index],
+      bagsPerBox: newBagsPerBox,
+      totalBags: newBagsPerBox * updated[index].boxCount,
+      totalWeight: totalWeight
     };
     onCartonsChange(updated);
   };
@@ -196,63 +258,124 @@ export default function AdvancedCartonSelector({
         <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
           <h5 className="text-sm font-semibold text-gray-900 mb-2">選択中の段ボール</h5>
           <div className="space-y-2">
-            {selectedCartons.map((carton, index) => (
-              <div key={index} className="flex items-center space-x-2 p-2 bg-white border border-gray-300 rounded text-xs">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <span className="font-medium text-gray-900">{carton.code}</span>
-                    {carton.palletConfig && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                        パレット○
-                      </span>
-                    )}
-                    <span className="text-gray-600">{carton.deliverySize}</span>
-                  </div>
-                  <div className="text-gray-600 truncate">
-                    {carton.innerDimensions} - {carton.capacity}袋入り
-                    {carton.palletConfig && (
-                      <span className="ml-2 text-indigo-600">
-                        (1段{carton.palletConfig.boxesPerLayer}箱×{carton.palletConfig.layers}段)
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-gray-500 mt-0.5">
-                    単価: ¥{carton.price}
+            {selectedCartons.map((carton, index) => {
+              // この段ボールのAmazon FBA/AWD制約をチェック
+              const cartonData = cartonsWithCapacity.find(c => c.code === carton.code);
+              const fbaCheck = cartonData ? checkAmazonFBACompliance(
+                cartonData.innerLength,
+                cartonData.innerWidth,
+                cartonData.innerHeight,
+                carton.cartonWeight,
+                productUnitWeight,
+                carton.bagsPerBox
+              ) : null;
+              
+              return (
+                <div key={index} className="p-2 bg-white border border-gray-300 rounded text-xs">
+                  <div className="flex items-start space-x-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2 mb-1 flex-wrap">
+                        <span className="font-medium text-gray-900">{carton.code}</span>
+                        {carton.palletConfig && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                            パレット○
+                          </span>
+                        )}
+                        {fbaCheck && fbaCheck.isCompliant && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                            FBA/AWD○
+                          </span>
+                        )}
+                        {fbaCheck && !fbaCheck.isCompliant && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                            FBA/AWD×
+                          </span>
+                        )}
+                        <span className="text-gray-600">{carton.deliverySize}</span>
+                      </div>
+                      <div className="text-gray-700 mb-1">
+                        {carton.innerDimensions}
+                        {carton.palletConfig && (
+                          <span className="ml-2 text-indigo-600">
+                            (1段{carton.palletConfig.boxesPerLayer}箱×{carton.palletConfig.layers}段)
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-gray-600 mb-1">
+                        <span className="font-medium">最大収容:</span> {carton.capacity}袋 | 
+                        <span className="font-medium ml-2">実際梱包:</span> {carton.bagsPerBox}袋/箱
+                      </div>
+                      <div className="text-gray-700 font-medium">
+                        1箱重量: {carton.totalWeight.toFixed(2)}kg 
+                        <span className="text-gray-500 ml-2 text-xs">
+                          (段ボール{carton.cartonWeight.toFixed(2)}kg + 商品{(productUnitWeight * carton.bagsPerBox).toFixed(2)}kg)
+                        </span>
+                      </div>
+                      <div className="text-gray-600 mt-1">
+                        単価: ¥{carton.price} | 小計: ¥{carton.price * carton.boxCount}
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col space-y-1 flex-shrink-0">
+                      <div className="flex items-center space-x-1">
+                        <label className="text-xs text-gray-600 w-10">箱数:</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={carton.boxCount}
+                          onChange={(e) => updateBoxCount(index, parseInt(e.target.value) || 0)}
+                          className="w-14 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <label className="text-xs text-gray-600 w-10">袋/箱:</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max={carton.capacity}
+                          value={carton.bagsPerBox}
+                          onChange={(e) => updateBagsPerBox(index, parseInt(e.target.value) || 0)}
+                          className="w-14 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                      </div>
+                      <div className="text-xs font-medium text-indigo-600 text-right">
+                        合計: {carton.totalBags}袋
+                      </div>
+                    </div>
+                    
+                    <button
+                      type="button"
+                      onClick={() => removeCarton(index)}
+                      className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded flex-shrink-0"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
-                
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="number"
-                    min="0"
-                    value={carton.boxCount}
-                    onChange={(e) => updateBoxCount(index, parseInt(e.target.value) || 0)}
-                    className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                  <span className="text-xs text-gray-600 w-8">箱</span>
-                </div>
-                
-                <div className="text-xs font-medium text-indigo-600 w-20 text-right">
-                  {carton.totalBags}袋
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={() => removeCarton(index)}
-                  className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded flex-shrink-0"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ))}
+              );
+            })}
             
-            <div className="pt-2 border-t border-indigo-300 flex justify-between text-sm">
-              <span className="text-gray-700">合計:</span>
-              <span className="font-medium text-gray-900">
-                {selectedCartons.reduce((sum, c) => sum + c.boxCount, 0)}箱 / {totalSelected}袋 / ¥{selectedCartons.reduce((sum, c) => sum + c.price * c.boxCount, 0)}
-              </span>
+            <div className="pt-2 border-t border-indigo-300 space-y-1">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">合計:</span>
+                <span className="font-medium text-gray-900">
+                  {selectedCartons.reduce((sum, c) => sum + c.boxCount, 0)}箱 / {totalSelected}袋
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">総重量:</span>
+                <span className="font-medium text-gray-900">
+                  {selectedCartons.reduce((sum, c) => sum + (c.totalWeight * c.boxCount), 0).toFixed(2)}kg
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">総額:</span>
+                <span className="font-medium text-gray-900">
+                  ¥{selectedCartons.reduce((sum, c) => sum + c.price * c.boxCount, 0)}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -316,63 +439,88 @@ export default function AdvancedCartonSelector({
                 </div>
               ) : (
                 <div className="divide-y divide-gray-200">
-                  {filteredAndSortedCartons.map((carton, index) => (
-                    <div key={carton.code} className={`p-3 hover:bg-gray-50 ${carton.isRecommended ? 'bg-yellow-50' : ''}`}>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 text-xs min-w-0">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <span className="font-medium text-gray-900">{carton.code}</span>
-                            {carton.isRecommended && (
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-200 text-yellow-800">
-                                おすすめ
+                  {filteredAndSortedCartons.map((carton, index) => {
+                    const totalWeightWithProduct = carton.cartonWeight + (productUnitWeight * carton.capacity);
+                    
+                    return (
+                      <div key={carton.code} className={`p-3 hover:bg-gray-50 ${
+                        carton.fbaCompliance.isCompliant ? 'bg-blue-50' : 
+                        carton.isRecommended ? 'bg-yellow-50' : ''
+                      }`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 text-xs min-w-0">
+                            <div className="flex items-center space-x-2 mb-1 flex-wrap">
+                              <span className="font-medium text-gray-900">{carton.code}</span>
+                              {carton.fbaCompliance.isCompliant && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-200 text-blue-900">
+                                  FBA/AWD○
+                                </span>
+                              )}
+                              {carton.isRecommended && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-200 text-yellow-800">
+                                  おすすめ
+                                </span>
+                              )}
+                              {carton.palletConfig && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                  パレット○
+                                </span>
+                              )}
+                              <span className="text-gray-600">{carton.deliverySize}</span>
+                            </div>
+                            <div className="text-gray-700 mb-1">
+                              {carton.innerLength}×{carton.innerWidth}×{carton.innerHeight}mm
+                              <span className="ml-2 font-medium text-indigo-600">
+                                約{carton.capacity}袋入り
                               </span>
+                            </div>
+                            <div className="text-gray-700 mb-1">
+                              <span className="font-medium">1箱重量:</span> {totalWeightWithProduct.toFixed(2)}kg
+                              <span className="text-gray-500 ml-2">
+                                (段ボール{carton.cartonWeight.toFixed(2)}kg + 商品{(productUnitWeight * carton.capacity).toFixed(2)}kg)
+                              </span>
+                            </div>
+                            {!carton.fbaCompliance.isCompliant && (
+                              <div className="text-red-600 mb-1 font-medium">
+                                ⚠️ FBA/AWD制約外
+                                {!carton.fbaCompliance.sizeOk && ` (最大辺: ${carton.fbaCompliance.maxDimension.toFixed(1)}cm > 63.5cm)`}
+                                {!carton.fbaCompliance.weightOk && ` (重量: ${carton.fbaCompliance.totalWeight.toFixed(2)}kg > 23kg)`}
+                              </div>
                             )}
                             {carton.palletConfig && (
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                パレット○
-                              </span>
+                              <div className="text-indigo-600 mb-1">
+                                パレット: 1段{carton.palletConfig.boxesPerLayer}箱×{carton.palletConfig.layers}段 = {carton.palletConfig.total}箱
+                              </div>
                             )}
-                            <span className="text-gray-600">{carton.deliverySize}</span>
-                          </div>
-                          <div className="text-gray-700 mb-1">
-                            {carton.innerLength}×{carton.innerWidth}×{carton.innerHeight}mm
-                            <span className="ml-2 font-medium text-indigo-600">
-                              約{carton.capacity}袋入り
-                            </span>
-                          </div>
-                          {carton.palletConfig && (
-                            <div className="text-indigo-600 mb-1">
-                              パレット: 1段{carton.palletConfig.boxesPerLayer}箱×{carton.palletConfig.layers}段 = {carton.palletConfig.total}箱
+                            <div className="text-gray-600">
+                              {carton.thickness} | {carton.format}
                             </div>
-                          )}
-                          <div className="text-gray-600">
-                            {carton.thickness} | {carton.format}
+                            <div className="text-gray-700 font-medium mt-1">
+                              単価: ¥{carton.price}
+                            </div>
                           </div>
-                          <div className="text-gray-700 font-medium mt-1">
-                            単価: ¥{carton.price}
+                          
+                          <div className="ml-3 flex flex-col space-y-1 flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => addCarton(carton, 1)}
+                              className="px-3 py-1 text-xs font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700 whitespace-nowrap"
+                            >
+                              + 1箱
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => addCarton(carton, Math.ceil(remaining / carton.capacity))}
+                              className="px-3 py-1 text-xs font-medium text-indigo-600 bg-white border border-indigo-600 rounded hover:bg-indigo-50 whitespace-nowrap"
+                              disabled={remaining <= 0}
+                            >
+                              不足分
+                            </button>
                           </div>
-                        </div>
-                        
-                        <div className="ml-3 flex flex-col space-y-1 flex-shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => addCarton(carton, 1)}
-                            className="px-3 py-1 text-xs font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700 whitespace-nowrap"
-                          >
-                            + 1箱
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => addCarton(carton, Math.ceil(remaining / carton.capacity))}
-                            className="px-3 py-1 text-xs font-medium text-indigo-600 bg-white border border-indigo-600 rounded hover:bg-indigo-50 whitespace-nowrap"
-                            disabled={remaining <= 0}
-                          >
-                            不足分
-                          </button>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

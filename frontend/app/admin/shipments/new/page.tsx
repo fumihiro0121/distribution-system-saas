@@ -60,8 +60,11 @@ export default function NewShipmentPage() {
       deliverySize: string;
       capacity: number;
       boxCount: number;
+      bagsPerBox: number;
       totalBags: number;
       price: number;
+      cartonWeight: number;
+      totalWeight: number;
       palletConfig: {
         boxesPerLayer: number;
         layers: number;
