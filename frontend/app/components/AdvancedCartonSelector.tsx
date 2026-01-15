@@ -186,10 +186,12 @@ export default function AdvancedCartonSelector({
     if (newBoxCount < 0) return;
     
     const updated = [...selectedCartons];
+    const bagsPerBox = updated[index].bagsPerBox ?? updated[index].capacity;
     updated[index] = {
       ...updated[index],
       boxCount: newBoxCount,
-      totalBags: updated[index].bagsPerBox * newBoxCount
+      bagsPerBox: bagsPerBox,
+      totalBags: bagsPerBox * newBoxCount
     };
     onCartonsChange(updated);
   };
@@ -199,13 +201,15 @@ export default function AdvancedCartonSelector({
     if (newBagsPerBox < 0 || newBagsPerBox > selectedCartons[index].capacity) return;
     
     const updated = [...selectedCartons];
-    const cartonWeight = updated[index].cartonWeight;
+    const cartonData = cartonsWithCapacity.find(c => c.code === updated[index].code);
+    const cartonWeight = updated[index].cartonWeight ?? (cartonData?.cartonWeight || 0.5);
     const totalWeight = cartonWeight + (productUnitWeight * newBagsPerBox);
     
     updated[index] = {
       ...updated[index],
       bagsPerBox: newBagsPerBox,
       totalBags: newBagsPerBox * updated[index].boxCount,
+      cartonWeight: cartonWeight,
       totalWeight: totalWeight
     };
     onCartonsChange(updated);
@@ -261,13 +265,19 @@ export default function AdvancedCartonSelector({
             {selectedCartons.map((carton, index) => {
               // この段ボールのAmazon FBA/AWD制約をチェック
               const cartonData = cartonsWithCapacity.find(c => c.code === carton.code);
+              
+              // 新しいフィールドが存在しない場合は計算する（後方互換性）
+              const bagsPerBox = carton.bagsPerBox ?? carton.capacity;
+              const cartonWeight = carton.cartonWeight ?? (cartonData?.cartonWeight || 0.5);
+              const totalWeight = carton.totalWeight ?? (cartonWeight + (productUnitWeight * bagsPerBox));
+              
               const fbaCheck = cartonData ? checkAmazonFBACompliance(
                 cartonData.innerLength,
                 cartonData.innerWidth,
                 cartonData.innerHeight,
-                carton.cartonWeight,
+                cartonWeight,
                 productUnitWeight,
-                carton.bagsPerBox
+                bagsPerBox
               ) : null;
               
               return (
@@ -303,12 +313,12 @@ export default function AdvancedCartonSelector({
                       </div>
                       <div className="text-gray-600 mb-1">
                         <span className="font-medium">最大収容:</span> {carton.capacity}袋 | 
-                        <span className="font-medium ml-2">実際梱包:</span> {carton.bagsPerBox}袋/箱
+                        <span className="font-medium ml-2">実際梱包:</span> {bagsPerBox}袋/箱
                       </div>
                       <div className="text-gray-700 font-medium">
-                        1箱重量: {carton.totalWeight.toFixed(2)}kg 
+                        1箱重量: {totalWeight.toFixed(2)}kg 
                         <span className="text-gray-500 ml-2 text-xs">
-                          (段ボール{carton.cartonWeight.toFixed(2)}kg + 商品{(productUnitWeight * carton.bagsPerBox).toFixed(2)}kg)
+                          (段ボール{cartonWeight.toFixed(2)}kg + 商品{(productUnitWeight * bagsPerBox).toFixed(2)}kg)
                         </span>
                       </div>
                       <div className="text-gray-600 mt-1">
@@ -316,7 +326,7 @@ export default function AdvancedCartonSelector({
                       </div>
                     </div>
                     
-                    <div className="flex flex-col space-y-1 flex-shrink-0">
+                      <div className="flex flex-col space-y-1 flex-shrink-0">
                       <div className="flex items-center space-x-1">
                         <label className="text-xs text-gray-600 w-10">箱数:</label>
                         <input
@@ -333,7 +343,7 @@ export default function AdvancedCartonSelector({
                           type="number"
                           min="0"
                           max={carton.capacity}
-                          value={carton.bagsPerBox}
+                          value={bagsPerBox}
                           onChange={(e) => updateBagsPerBox(index, parseInt(e.target.value) || 0)}
                           className="w-14 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500"
                         />
@@ -367,7 +377,13 @@ export default function AdvancedCartonSelector({
               <div className="flex justify-between text-sm">
                 <span className="text-gray-700">総重量:</span>
                 <span className="font-medium text-gray-900">
-                  {selectedCartons.reduce((sum, c) => sum + (c.totalWeight * c.boxCount), 0).toFixed(2)}kg
+                  {selectedCartons.reduce((sum, c) => {
+                    const cartonData = cartonsWithCapacity.find(cd => cd.code === c.code);
+                    const bagsPerBox = c.bagsPerBox ?? c.capacity;
+                    const cartonWeight = c.cartonWeight ?? (cartonData?.cartonWeight || 0.5);
+                    const totalWeight = c.totalWeight ?? (cartonWeight + (productUnitWeight * bagsPerBox));
+                    return sum + (totalWeight * c.boxCount);
+                  }, 0).toFixed(2)}kg
                 </span>
               </div>
               <div className="flex justify-between text-sm">
