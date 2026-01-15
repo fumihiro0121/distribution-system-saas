@@ -110,17 +110,28 @@ export default function AdvancedCartonSelector({
     }
 
     // ソート
-    const sorted = [...filtered];
+    let sorted = [...filtered];
     
     switch (sortBy) {
       case 'recommended':
         sorted.sort((a, b) => {
-          // Amazon FBA/AWD制約を満たすものを優先
-          if (a.fbaCompliance.isCompliant && !b.fbaCompliance.isCompliant) return -1;
-          if (!a.fbaCompliance.isCompliant && b.fbaCompliance.isCompliant) return 1;
-          // おすすめを優先
+          // FBA/AWD制約外のものは除外（おすすめには表示しない）
+          if (!a.fbaCompliance.isCompliant && !b.fbaCompliance.isCompliant) {
+            return 0; // 両方とも制約外なら順序維持
+          }
+          if (!a.fbaCompliance.isCompliant) return 1; // aが制約外なら後ろへ
+          if (!b.fbaCompliance.isCompliant) return -1; // bが制約外なら後ろへ
+          
+          // FBA/AWD○ かつ パレット○ を最優先
+          const aHasPallet = a.palletConfig !== null;
+          const bHasPallet = b.palletConfig !== null;
+          if (aHasPallet && !bHasPallet) return -1;
+          if (!aHasPallet && bHasPallet) return 1;
+          
+          // 実績データのおすすめを優先
           if (a.isRecommended && !b.isRecommended) return -1;
           if (!a.isRecommended && b.isRecommended) return 1;
+          
           // 容量の降順
           return b.capacity - a.capacity;
         });
@@ -143,6 +154,11 @@ export default function AdvancedCartonSelector({
       case 'capacity-desc':
         sorted.sort((a, b) => b.capacity - a.capacity);
         break;
+    }
+    
+    // おすすめ順の場合は上位100件に制限（パフォーマンスのため）
+    if (sortBy === 'recommended' && !searchKeyword.trim()) {
+      sorted = sorted.slice(0, 100);
     }
     
     return sorted;
@@ -410,9 +426,12 @@ export default function AdvancedCartonSelector({
               {showAllCartons ? '▼ 閉じる' : '▶ 表示'}
             </button>
           </h5>
-          <span className="text-xs text-gray-600">
+          <div className="text-xs text-gray-600">
             {filteredAndSortedCartons.length}件
-          </span>
+            {sortBy === 'recommended' && !searchKeyword.trim() && (
+              <span className="ml-2 text-blue-600">(FBA/AWD○優先)</span>
+            )}
+          </div>
         </div>
 
         {showAllCartons && (
