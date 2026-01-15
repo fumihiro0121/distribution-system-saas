@@ -9,7 +9,7 @@ import { products as productsData } from '@/data/products';
 import { getCartonRecommendations } from '@/data/carton-recommendations';
 import Header from '@/app/components/Header';
 import Navigation from '@/app/components/Navigation';
-import ProductCartonSelector from '@/app/components/ProductCartonSelector';
+import AdvancedCartonSelector from '@/app/components/AdvancedCartonSelector';
 
 // 配送先マスタデータ（Amazon FBA/AWD + スーパーマーケット）
 const destinations = [...amazonFacilities, ...supermarketLocations];
@@ -54,18 +54,18 @@ export default function NewShipmentPage() {
     destinationIds: [] as number[],
     selectedProducts: [] as Array<{productId: number; quantity: number}>,
     selectedCartons: {} as Record<number, Array<{
-      cartonCode: string;
-      cartonName: string;
+      code: string;
+      name: string;
       innerDimensions: string;
       deliverySize: string;
       capacity: number;
       boxCount: number;
       totalBags: number;
-      isPalletFit: boolean;
-      palletConfiguration: {
+      price: number;
+      palletConfig: {
         boxesPerLayer: number;
         layers: number;
-        totalBoxes: number;
+        total: number;
       } | null;
     }>>,
     notes: '',
@@ -512,24 +512,25 @@ export default function NewShipmentPage() {
                       const product = productsData.find(p => p.id === selectedProduct.productId);
                       if (!product) return null;
                       
-                      const cartonOptions = getCartonRecommendations(product.productName);
+                      // おすすめの段ボールコードを取得
+                      const cartonRecommendations = getCartonRecommendations(product.productName);
+                      const recommendedCartonCodes = cartonRecommendations.map(c => c.cartonCode);
                       const selectedCartons = formData.selectedCartons[selectedProduct.productId] || [];
                       
                       return (
                         <div key={selectedProduct.productId} className="border border-gray-200 rounded-lg p-4 bg-white">
-                          <div className="mb-2">
+                          <div className="mb-3">
                             <h5 className="text-sm font-medium text-gray-900">
                               {product.productName}
                               {product.sku && <span className="text-gray-500 ml-2 text-xs">({product.sku})</span>}
                             </h5>
-                            <p className="text-xs text-gray-600">出荷数量: {selectedProduct.quantity}袋</p>
                           </div>
                           
-                          <ProductCartonSelector
+                          <AdvancedCartonSelector
                             productName={product.productName}
                             productId={selectedProduct.productId}
                             targetQuantity={selectedProduct.quantity}
-                            cartonOptions={cartonOptions}
+                            recommendedCartonCodes={recommendedCartonCodes}
                             selectedCartons={selectedCartons}
                             onCartonsChange={(cartons) => {
                               setFormData({
