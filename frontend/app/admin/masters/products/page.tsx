@@ -220,6 +220,7 @@ export default function ProductMasterPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">商品名</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">セット数 / 袋数</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU / JAN</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ASIN / FNSKU</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">HSコード</th>
@@ -236,8 +237,13 @@ export default function ProductMasterPage() {
                   <tr key={product.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <div className="text-sm font-medium text-gray-900">{product.productName}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="text-sm text-gray-900">
+                        {product.numberOfSets}セット
+                      </div>
                       <div className="text-xs text-gray-500">
-                        {product.setQuantity && `${product.setQuantity}`}
+                        ({product.bagsPerSet}袋)
                       </div>
                     </td>
                     <td className="px-4 py-3">

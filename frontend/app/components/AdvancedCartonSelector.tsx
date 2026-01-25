@@ -11,6 +11,7 @@ import {
   estimateCartonWeight,
   checkAmazonFBACompliance 
 } from '@/data/all-cartons';
+import { cartonProductMapping } from '@/data/carton-product-mapping';
 
 interface SelectedCarton {
   code: string;
@@ -18,6 +19,7 @@ interface SelectedCarton {
   innerDimensions: string;
   deliverySize: string;
   capacity: number;
+  volume: number; // 容積 (L)
   boxCount: number;
   bagsPerBox: number; // 各段ボールに入れる実際の袋数
   totalBags: number;
@@ -34,7 +36,8 @@ interface SelectedCarton {
 interface AdvancedCartonSelectorProps {
   productName: string;
   productId: number;
-  targetQuantity: number;
+  targetQuantity: number; // 袋数
+  bagsPerSet: number; // 1セット内の袋数
   recommendedCartonCodes: string[]; // おすすめの段ボールコード
   selectedCartons: SelectedCarton[];
   onCartonsChange: (cartons: SelectedCarton[]) => void;
@@ -46,6 +49,7 @@ export default function AdvancedCartonSelector({
   productName,
   productId,
   targetQuantity,
+  bagsPerSet,
   recommendedCartonCodes,
   selectedCartons,
   onCartonsChange
@@ -60,18 +64,56 @@ export default function AdvancedCartonSelector({
 
   // 各段ボールの容量を計算
   const cartonsWithCapacity = useMemo(() => {
+    // まず、その商品について実績データがある段ボールを見つける
+    let volumePerBag = productUnitVolume; // デフォルトは商品の単位容積
+    
+    for (const [cartonCode, details] of Object.entries(cartonProductMapping)) {
+      const detail = details.find(d => d.productName === productName);
+      if (detail && detail.packingBags > 0) {
+        // 実績段ボールを見つけた
+        const historicalCarton = allCartons.find(c => c.code === cartonCode);
+        if (historicalCarton) {
+          // 実績段ボールの容積を計算
+          const historicalVolume = historicalCarton.volume || 
+            calculateVolume(historicalCarton.innerLength, historicalCarton.innerWidth, historicalCarton.innerHeight);
+          // 1袋あたりの必要容積を計算（リットル単位）
+          volumePerBag = historicalVolume / detail.packingBags;
+          break; // 最初の実績データを使用
+        }
+      }
+    }
+    
     return allCartons.map(carton => {
-      const cartonVolume = calculateVolume(carton.innerLength, carton.innerWidth, carton.innerHeight);
-      const capacity = calculateCartonCapacity(cartonVolume, productUnitVolume);
+      // 実績データがある場合はそれを優先
+      const historicalDetail = cartonProductMapping[carton.code]?.find(
+        detail => detail.productName === productName
+      );
+      
+      // 容積を計算（リットル単位）
+      const cartonVolume = carton.volume || calculateVolume(carton.innerLength, carton.innerWidth, carton.innerHeight);
+      
+      let capacity: number;
+      if (historicalDetail) {
+        // 実績データがある場合は、実績の袋数をそのまま使用
+        capacity = historicalDetail.packingBags;
+      } else {
+        // 実績データがない場合は、容積比から計算
+        const estimatedBags = cartonVolume / volumePerBag;
+        // 5の倍数で切り下げ
+        capacity = Math.floor(estimatedBags / 5) * 5;
+      }
+      
       const isRecommended = recommendedCartonCodes.includes(carton.code);
       
-      // 段ボールの重さを推定
-      const cartonWeight = estimateCartonWeight(
-        carton.innerLength, 
-        carton.innerWidth, 
-        carton.innerHeight, 
-        carton.thickness
-      );
+      // 段ボールの重さ：マスタデータがあればそれを使用、なければ推定
+      const cartonWeight = carton.weight 
+        ? carton.weight / 1000  // gをkgに変換
+        : estimateCartonWeight(
+            carton.innerLength, 
+            carton.innerWidth, 
+            carton.innerHeight, 
+            carton.thickness
+          );
       
       // Amazon FBA/AWD制約をチェック
       const fbaCompliance = checkAmazonFBACompliance(
@@ -92,7 +134,7 @@ export default function AdvancedCartonSelector({
         fbaCompliance
       };
     }).filter(carton => carton.capacity > 0); // 容量0以下は除外
-  }, [productUnitVolume, productUnitWeight, recommendedCartonCodes]);
+  }, [productName, productUnitVolume, productUnitWeight, recommendedCartonCodes]);
 
   // 検索とソートを適用
   const filteredAndSortedCartons = useMemo(() => {
@@ -115,20 +157,60 @@ export default function AdvancedCartonSelector({
     switch (sortBy) {
       case 'recommended':
         sorted.sort((a, b) => {
-          // FBA/AWD制約外のものは除外（おすすめには表示しない）
-          if (!a.fbaCompliance.isCompliant && !b.fbaCompliance.isCompliant) {
-            return 0; // 両方とも制約外なら順序維持
-          }
-          if (!a.fbaCompliance.isCompliant) return 1; // aが制約外なら後ろへ
-          if (!b.fbaCompliance.isCompliant) return -1; // bが制約外なら後ろへ
+          // この商品に対する実績データ（HIST-）を最優先
+          const aIsProductHistorical = cartonProductMapping[a.code]?.some(
+            detail => detail.productName === productName
+          ) ?? false;
+          const bIsProductHistorical = cartonProductMapping[b.code]?.some(
+            detail => detail.productName === productName
+          ) ?? false;
           
-          // FBA/AWD○ かつ パレット○ を最優先
+          if (aIsProductHistorical && !bIsProductHistorical) return -1;
+          if (!aIsProductHistorical && bIsProductHistorical) return 1;
+          
+          // FBA/AWD制約外のものは除外（おすすめには表示しない）
+          // ただし実績段ボールは制約外でも表示する
+          if (!aIsProductHistorical && !bIsProductHistorical) {
+            if (!a.fbaCompliance.isCompliant && !b.fbaCompliance.isCompliant) {
+              return 0; // 両方とも制約外なら順序維持
+            }
+            if (!a.fbaCompliance.isCompliant) return 1; // aが制約外なら後ろへ
+            if (!b.fbaCompliance.isCompliant) return -1; // bが制約外なら後ろへ
+          }
+          
+          // 実績データ以外の場合、パレット配置効率でソート
+          if (!aIsProductHistorical && !bIsProductHistorical) {
+            // パレット配置効率を計算
+            // 効率 = パレット1台に積める商品のセット数
+            const calcPalletEfficiency = (carton: typeof a) => {
+              if (!carton.palletConfig) return 0;
+              
+              // パレット1台に積める段ボール箱数
+              const totalBoxes = carton.palletConfig.boxesPerLayer * carton.palletConfig.layers;
+              
+              // 段ボール1箱に入る商品のセット数
+              const setsPerBox = Math.floor(carton.capacity / bagsPerSet);
+              
+              // パレット1台に積める商品のセット数
+              return totalBoxes * setsPerBox;
+            };
+            
+            const aEfficiency = calcPalletEfficiency(a);
+            const bEfficiency = calcPalletEfficiency(b);
+            
+            // 効率が高い方を優先
+            if (aEfficiency !== bEfficiency) {
+              return bEfficiency - aEfficiency;
+            }
+          }
+          
+          // FBA/AWD○ かつ パレット○ を次に優先
           const aHasPallet = a.palletConfig !== null;
           const bHasPallet = b.palletConfig !== null;
           if (aHasPallet && !bHasPallet) return -1;
           if (!aHasPallet && bHasPallet) return 1;
           
-          // 実績データのおすすめを優先
+          // データベースからのおすすめを優先
           if (a.isRecommended && !b.isRecommended) return -1;
           if (!a.isRecommended && b.isRecommended) return 1;
           
@@ -181,6 +263,7 @@ export default function AdvancedCartonSelector({
       innerDimensions: `${carton.innerLength}×${carton.innerWidth}×${carton.innerHeight}mm`,
       deliverySize: carton.deliverySize,
       capacity: carton.capacity,
+      volume: carton.volume,
       boxCount: quantity,
       bagsPerBox: bagsPerBox,
       totalBags: bagsPerBox * quantity,
@@ -247,10 +330,10 @@ export default function AdvancedCartonSelector({
         <div className="flex-1">
           <div className="flex items-center space-x-4">
             <span className="text-sm font-medium text-gray-700">
-              出荷数量: <span className="text-indigo-600">{targetQuantity}袋</span>
+              出荷セット数: <span className="text-indigo-600">{Math.ceil(targetQuantity / bagsPerSet)}セット ({targetQuantity}袋)</span>
             </span>
             <span className="text-sm font-medium text-gray-700">
-              選択済み: <span className="text-indigo-600">{totalSelected}袋</span>
+              選択済み: <span className="text-indigo-600">{Math.floor(totalSelected / bagsPerSet)}セット ({totalSelected}袋)</span>
             </span>
             <span className={`text-sm font-bold ${
               status === 'exact' ? 'text-green-600' :
@@ -258,8 +341,8 @@ export default function AdvancedCartonSelector({
               'text-orange-600'
             }`}>
               {status === 'exact' && '✓ ぴったり'}
-              {status === 'short' && `不足: ${remaining}袋`}
-              {status === 'over' && `過剰: ${-remaining}袋`}
+              {status === 'short' && `不足: ${Math.ceil(remaining / bagsPerSet)}セット (${remaining}袋)`}
+              {status === 'over' && `過剰: ${Math.ceil(-remaining / bagsPerSet)}セット (${-remaining}袋)`}
             </span>
           </div>
         </div>
@@ -302,6 +385,16 @@ export default function AdvancedCartonSelector({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-1 flex-wrap">
                         <span className="font-medium text-gray-900">{carton.code}</span>
+                        {(() => {
+                          const historicalDetail = cartonProductMapping[carton.code]?.find(
+                            detail => detail.productName === productName
+                          );
+                          return historicalDetail && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-900">
+                              ✓ 実績: {historicalDetail.packingSets}セット({historicalDetail.packingBags}袋)
+                            </span>
+                          );
+                        })()}
                         {carton.palletConfig && (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                             パレット○
@@ -321,6 +414,9 @@ export default function AdvancedCartonSelector({
                       </div>
                       <div className="text-gray-700 mb-1">
                         {carton.innerDimensions}
+                        <span className="ml-2 text-gray-600">
+                          ({carton.volume.toFixed(1)}L)
+                        </span>
                         {carton.palletConfig && (
                           <span className="ml-2 text-indigo-600">
                             (1段{carton.palletConfig.boxesPerLayer}箱×{carton.palletConfig.layers}段)
@@ -328,8 +424,8 @@ export default function AdvancedCartonSelector({
                         )}
                       </div>
                       <div className="text-gray-600 mb-1">
-                        <span className="font-medium">最大収容:</span> {carton.capacity}袋 | 
-                        <span className="font-medium ml-2">実際梱包:</span> {bagsPerBox}袋/箱
+                        <span className="font-medium">最大収容:</span> {Math.floor(carton.capacity / bagsPerSet)}セット ({carton.capacity}袋) | 
+                        <span className="font-medium ml-2">実際梱包:</span> {Math.floor(bagsPerBox / bagsPerSet)}セット/箱 ({bagsPerBox}袋)
                       </div>
                       <div className="text-gray-700 font-medium">
                         1箱重量: {totalWeight.toFixed(2)}kg 
@@ -365,7 +461,7 @@ export default function AdvancedCartonSelector({
                         />
                       </div>
                       <div className="text-xs font-medium text-indigo-600 text-right">
-                        合計: {carton.totalBags}袋
+                        合計: {Math.floor(carton.totalBags / bagsPerSet)}セット ({carton.totalBags}袋)
                       </div>
                     </div>
                     
@@ -387,7 +483,7 @@ export default function AdvancedCartonSelector({
               <div className="flex justify-between text-sm">
                 <span className="text-gray-700">合計:</span>
                 <span className="font-medium text-gray-900">
-                  {selectedCartons.reduce((sum, c) => sum + c.boxCount, 0)}箱 / {totalSelected}袋
+                  {selectedCartons.reduce((sum, c) => sum + c.boxCount, 0)}箱 / {Math.floor(totalSelected / bagsPerSet)}セット ({totalSelected}袋)
                 </span>
               </div>
               <div className="flex justify-between text-sm">
@@ -429,7 +525,7 @@ export default function AdvancedCartonSelector({
           <div className="text-xs text-gray-600">
             {filteredAndSortedCartons.length}件
             {sortBy === 'recommended' && !searchKeyword.trim() && (
-              <span className="ml-2 text-blue-600">(FBA/AWD○優先)</span>
+              <span className="ml-2 text-purple-600">(実績優先 → パレット効率順)</span>
             )}
           </div>
         </div>
@@ -486,6 +582,16 @@ export default function AdvancedCartonSelector({
                           <div className="flex-1 text-xs min-w-0">
                             <div className="flex items-center space-x-2 mb-1 flex-wrap">
                               <span className="font-medium text-gray-900">{carton.code}</span>
+                              {(() => {
+                                const historicalDetail = cartonProductMapping[carton.code]?.find(
+                                  detail => detail.productName === productName
+                                );
+                                return historicalDetail && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-200 text-purple-900">
+                                    ✓ 実績: {historicalDetail.packingSets}セット({historicalDetail.packingBags}袋)
+                                  </span>
+                                );
+                              })()}
                               {carton.fbaCompliance.isCompliant && (
                                 <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-200 text-blue-900">
                                   FBA/AWD○
@@ -505,8 +611,11 @@ export default function AdvancedCartonSelector({
                             </div>
                             <div className="text-gray-700 mb-1">
                               {carton.innerLength}×{carton.innerWidth}×{carton.innerHeight}mm
+                              <span className="ml-2 text-gray-600">
+                                ({carton.volume.toFixed(1)}L)
+                              </span>
                               <span className="ml-2 font-medium text-indigo-600">
-                                約{carton.capacity}袋入り
+                                約{Math.floor(carton.capacity / bagsPerSet)}セット入り ({carton.capacity}袋)
                               </span>
                             </div>
                             <div className="text-gray-700 mb-1">
@@ -515,6 +624,21 @@ export default function AdvancedCartonSelector({
                                 (段ボール{carton.cartonWeight.toFixed(2)}kg + 商品{(productUnitWeight * carton.capacity).toFixed(2)}kg)
                               </span>
                             </div>
+                            {(() => {
+                              const historicalDetail = cartonProductMapping[carton.code]?.find(
+                                detail => detail.productName === productName
+                              );
+                              return historicalDetail && (
+                                <div className="text-purple-700 mb-1 bg-purple-50 p-2 rounded border border-purple-200">
+                                  📦 <span className="font-semibold">{historicalDetail.packingSets}セット（{historicalDetail.packingBags}袋）</span>入れて出荷実績あり
+                                  {historicalDetail.palletFit && (
+                                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                      パレットぴったり
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()}
                             {!carton.fbaCompliance.isCompliant && (
                               <div className="text-red-600 mb-1 font-medium">
                                 ⚠️ FBA/AWD制約外

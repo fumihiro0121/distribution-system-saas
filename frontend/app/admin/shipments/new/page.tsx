@@ -285,6 +285,14 @@ export default function NewShipmentPage() {
               📦 商品マスタ管理
             </a>
             <a
+              href="/admin/masters/cartons"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+            >
+              📦 段ボールマスタ管理
+            </a>
+            <a
               href="/admin/masters/destinations"
               target="_blank"
               rel="noopener noreferrer"
@@ -427,6 +435,9 @@ export default function NewShipmentPage() {
                                   />
                                   <label className="text-sm font-medium text-gray-900">
                                     {product.productName}
+                                    <span className="text-gray-500 ml-2 text-xs">
+                                      ({product.numberOfSets}セット、{product.bagsPerSet}袋)
+                                    </span>
                                   </label>
                                 </div>
                                 <div className="ml-7 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-600">
@@ -457,10 +468,12 @@ export default function NewShipmentPage() {
                                 </div>
                               </div>
                               
-                              {/* 数量入力 */}
+                              {/* セット数入力 */}
                               {isSelected && (
                                 <div className="ml-4">
-                                  <label className="block text-xs text-gray-600 mb-1">数量</label>
+                                  <label className="block text-xs text-gray-600 mb-1">
+                                    セット数 ({product.bagsPerSet}袋/セット)
+                                  </label>
                                   <input
                                     type="number"
                                     min="1"
@@ -501,11 +514,14 @@ export default function NewShipmentPage() {
                       return (
                         <div key={selectedProduct.productId} className="flex justify-between items-center text-sm">
                           <span className="text-gray-900">
-                            {product.productName} 
+                            {product.productName}
+                            <span className="text-gray-500 ml-2 text-xs">
+                              ({product.numberOfSets}セット、{product.bagsPerSet}袋)
+                            </span>
                             {product.sku && <span className="text-gray-500 ml-2">({product.sku})</span>}
                           </span>
                           <span className="font-medium text-indigo-600">
-                            数量: {selectedProduct.quantity}個
+                            セット数: {selectedProduct.quantity} ({selectedProduct.quantity * product.bagsPerSet}袋)
                           </span>
                         </div>
                       );
@@ -533,6 +549,9 @@ export default function NewShipmentPage() {
                           <div className="mb-3">
                             <h5 className="text-sm font-medium text-gray-900">
                               {product.productName}
+                              <span className="text-gray-500 ml-2 text-xs">
+                                ({product.numberOfSets}セット、{product.bagsPerSet}袋)
+                              </span>
                               {product.sku && <span className="text-gray-500 ml-2 text-xs">({product.sku})</span>}
                             </h5>
                           </div>
@@ -541,6 +560,7 @@ export default function NewShipmentPage() {
                             productName={product.productName}
                             productId={selectedProduct.productId}
                             targetQuantity={selectedProduct.quantity}
+                            bagsPerSet={product.bagsPerSet}
                             recommendedCartonCodes={recommendedCartonCodes}
                             selectedCartons={selectedCartons}
                             onCartonsChange={(cartons) => {

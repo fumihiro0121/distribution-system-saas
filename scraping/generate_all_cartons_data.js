@@ -15,12 +15,28 @@ for (let i = 1; i < lines.length; i++) {
   const line = lines[i].trim();
   if (!line) continue;
   
-  // CSVの行をパース（価格に"7 円"のようなカンマ区切りが含まれるため特別処理）
-  const match = line.match(/^([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]*),([^,]*),(".*?"|[^,]*),(.*)$/);
+  // CSVの行を分割（ダブルクォートを考慮）
+  const parts = [];
+  let currentPart = '';
+  let inQuotes = false;
   
-  if (!match) continue;
+  for (let j = 0; j < line.length; j++) {
+    const char = line[j];
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      parts.push(currentPart.trim());
+      currentPart = '';
+    } else {
+      currentPart += char;
+    }
+  }
+  parts.push(currentPart.trim());
   
-  const [_, code, name, deliverySize, innerDimStr, outerSum, thickness, format, palletStr, priceStr, url] = match;
+  if (parts.length < 11) continue;
+  
+  const [code, name, deliverySize, innerDimStr, outerSum, thickness, format, palletStr, priceStr, volumeStr, weightStr, ...urlParts] = parts;
+  const url = urlParts.join(','); // URLに含まれる可能性のあるカンマを結合
   
   // 内寸をパース（例: "450×300×230mm" -> {length: 450, width: 300, height: 230}）
   const innerMatch = innerDimStr.match(/(\d+)×(\d+)×(\d+)/);
@@ -30,11 +46,25 @@ for (let i = 1; i < lines.length; i++) {
   const innerWidth = parseInt(innerMatch[2]);
   const innerHeight = parseInt(innerMatch[3]);
   
-  // 価格をパース（例: "7 円" -> 7, "" -> 300）
+  // 価格をパース
   let price = 300; // デフォルト価格
-  const priceMatch = priceStr.match(/(\d+)/);
+  const priceMatch = priceStr.replace(/"/g, '').match(/(\d+\.?\d*)/);
   if (priceMatch) {
-    price = parseInt(priceMatch[1]);
+    price = parseFloat(priceMatch[1]);
+  }
+  
+  // 容量をパース（L）
+  let volume = null;
+  const volumeMatch = volumeStr.replace(/"/g, '').match(/(\d+\.?\d*)/);
+  if (volumeMatch) {
+    volume = parseFloat(volumeMatch[1]);
+  }
+  
+  // 重量をパース（g）
+  let weight = null;
+  const weightMatch = weightStr.replace(/"/g, '').match(/(\d+\.?\d*)/);
+  if (weightMatch) {
+    weight = parseFloat(weightMatch[1]);
   }
   
   // パレット配置をパース（例: "1段8箱×7段"）
@@ -60,6 +90,8 @@ for (let i = 1; i < lines.length; i++) {
     thickness: thickness.trim(),
     format: format.trim(),
     price,
+    volume,
+    weight,
     url: url.trim(),
     palletConfig
   });
@@ -81,6 +113,8 @@ export interface Carton {
   thickness: string;
   format: string;
   price: number;
+  volume: number | null; // L
+  weight: number | null; // g
   url: string;
   palletConfig: {
     boxesPerLayer: number;
