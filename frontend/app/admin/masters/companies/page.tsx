@@ -4,45 +4,54 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/app/components/Header';
 import Navigation from '@/app/components/Navigation';
+import { companies as initialCompanies, Company as CompanyType } from '@/data/companies';
 
-interface Company {
-  id: number;
-  name: string;
-  type: 'manufacturer' | 'packing' | 'forwarder';
-  address: string;
-  phone: string;
-  email: string;
-  contact: string;
-  president: string;
+// ページ用の拡張型（UIで必要な追加フィールド）
+interface CompanyExtended extends CompanyType {
+  president?: string;
 }
 
 export default function CompanyMasterPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [companies, setCompanies] = useState<Company[]>([
-    { id: 1, type: 'manufacturer', name: 'ABC製造株式会社', address: '東京都港区芝1-1-1', phone: '03-1234-5678', email: 'info@abc-mfg.jp', contact: '山田太郎', president: '鈴木一郎' },
-    { id: 2, type: 'manufacturer', name: 'XYZ食品株式会社', address: '大阪府大阪市北区梅田2-2-2', phone: '06-9876-5432', email: 'contact@xyz-food.jp', contact: '田中花子', president: '佐藤次郎' },
-    { id: 3, type: 'manufacturer', name: '日本有機食品株式会社', address: '京都府京都市下京区四条通3-3-3', phone: '075-1111-2222', email: 'info@nihon-organic.jp', contact: '佐々木健', president: '高橋三郎' },
-    { id: 4, type: 'packing', name: '株式会社福富運送', address: '東京都江東区豊洲4-4-4', phone: '03-5555-6666', email: 'info@fukutomi.jp', contact: '福富太郎', president: '福富社長' },
-    { id: 5, type: 'packing', name: '梱包サービス東京株式会社', address: '東京都大田区平和島5-5-5', phone: '03-7777-8888', email: 'service@packing-tokyo.jp', contact: '梱包次郎', president: '梱包社長' },
-    { id: 6, type: 'forwarder', name: '佐川グローバルロジスティクス株式会社', address: '東京都江東区新木場6-6-6', phone: '03-8888-9999', email: 'global@sagawa.jp', contact: '佐川太郎', president: '佐川社長' },
-    { id: 7, type: 'forwarder', name: '日本ジャパントラスト株式会社', address: '横浜市中区山下町7-7-7', phone: '045-1234-5678', email: 'info@japan-trust.jp', contact: 'トラスト花子', president: 'トラスト社長' },
-    { id: 8, type: 'forwarder', name: 'DHLジャパン株式会社', address: '東京都品川区東品川8-8-8', phone: '03-0000-1111', email: 'japan@dhl.com', contact: 'DHL太郎', president: 'DHL社長' },
-    { id: 9, type: 'forwarder', name: 'FedExジャパン株式会社', address: '千葉市美浜区中瀬9-9-9', phone: '043-2222-3333', email: 'japan@fedex.com', contact: 'FedEx花子', president: 'FedEx社長' },
-  ]);
+  
+  // companies.tsのデータを初期値として使用
+  const [companies, setCompanies] = useState<CompanyExtended[]>(() => {
+    // localStorageから読み込み、なければinitialCompaniesを使用
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('companies_master');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error('Failed to load companies from localStorage', e);
+        }
+      }
+    }
+    return initialCompanies.map(c => ({ ...c, president: '' }));
+  });
+
+  // companies変更時にlocalStorageに保存
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('companies_master', JSON.stringify(companies));
+    }
+  }, [companies]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [editingCompany, setEditingCompany] = useState<CompanyExtended | null>(null);
   const [formData, setFormData] = useState({
+    code: '',
     name: '',
-    type: 'manufacturer' as 'manufacturer' | 'packing' | 'forwarder',
+    type: 'manufacturer' as 'manufacturer' | 'packer' | 'forwarder',
     address: '',
     phone: '',
     email: '',
-    contact: '',
+    contactPerson: '',
     president: '',
+    notes: '',
   });
 
   useEffect(() => {
@@ -62,27 +71,31 @@ export default function CompanyMasterPage() {
   const handleAdd = (type?: string) => {
     setEditingCompany(null);
     setFormData({
+      code: '',
       name: '',
-      type: (type || 'manufacturer') as 'manufacturer' | 'packing' | 'forwarder',
+      type: (type || 'manufacturer') as 'manufacturer' | 'packer' | 'forwarder',
       address: '',
       phone: '',
       email: '',
-      contact: '',
+      contactPerson: '',
       president: '',
+      notes: '',
     });
     setIsAddModalOpen(true);
   };
 
-  const handleEdit = (company: Company) => {
+  const handleEdit = (company: CompanyExtended) => {
     setEditingCompany(company);
     setFormData({
+      code: company.code,
       name: company.name,
       type: company.type,
-      address: company.address,
-      phone: company.phone,
-      email: company.email,
-      contact: company.contact,
-      president: company.president,
+      address: company.address || '',
+      phone: company.phone || '',
+      email: company.email || '',
+      contactPerson: company.contactPerson || '',
+      president: company.president || '',
+      notes: company.notes || '',
     });
     setIsAddModalOpen(true);
   };
@@ -97,15 +110,15 @@ export default function CompanyMasterPage() {
           ? { ...c, ...formData }
           : c
       ));
-      alert('取引先情報を更新しました（デモ）');
+      alert('取引先情報を更新しました');
     } else {
       // 新規追加
-      const newCompany: Company = {
+      const newCompany: CompanyExtended = {
         id: Math.max(...companies.map(c => c.id)) + 1,
         ...formData,
       };
       setCompanies([...companies, newCompany]);
-      alert('取引先を追加しました（デモ）');
+      alert('取引先を追加しました');
     }
     
     setIsAddModalOpen(false);
@@ -114,14 +127,14 @@ export default function CompanyMasterPage() {
   const handleDelete = (id: number) => {
     if (confirm('この取引先を削除してもよろしいですか？')) {
       setCompanies(companies.filter(c => c.id !== id));
-      alert('取引先を削除しました（デモ）');
+      alert('取引先を削除しました');
     }
   };
 
   const filteredCompanies = companies.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.contact.toLowerCase().includes(searchTerm.toLowerCase());
+      (c.address && c.address.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (c.contactPerson && c.contactPerson.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesType = filterType === 'all' || c.type === filterType;
     
@@ -132,13 +145,13 @@ export default function CompanyMasterPage() {
 
   const typeLabels: {[key: string]: string} = {
     manufacturer: 'メーカー',
-    packing: '梱包業者',
+    packer: '梱包業者',
     forwarder: 'フォワーダー',
   };
 
   const typeColors: {[key: string]: string} = {
     manufacturer: 'bg-green-100 text-green-800',
-    packing: 'bg-yellow-100 text-yellow-800',
+    packer: 'bg-yellow-100 text-yellow-800',
     forwarder: 'bg-purple-100 text-purple-800',
   };
 
@@ -151,7 +164,7 @@ export default function CompanyMasterPage() {
         userName={user.name}
       />
       <Navigation 
-        items={['ダッシュボード', '出荷計画', '商品マスタ', '取引先', 'ユーザー管理', 'レポート']}
+        items={['ダッシュボード', '出荷計画', '商品マスタ', '段ボールマスタ', '取引先', 'ユーザー管理', 'レポート']}
         activeItem="取引先"
         activeColor="indigo"
         role="admin"
@@ -169,7 +182,7 @@ export default function CompanyMasterPage() {
               + メーカーを追加
             </button>
             <button
-              onClick={() => handleAdd('packing')}
+              onClick={() => handleAdd('packer')}
               className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm"
             >
               + 梱包業者を追加
@@ -193,7 +206,7 @@ export default function CompanyMasterPage() {
             >
               <option value="all">すべて</option>
               <option value="manufacturer">メーカー</option>
-              <option value="packing">梱包業者</option>
+              <option value="packer">梱包業者</option>
               <option value="forwarder">フォワーダー</option>
             </select>
           </div>
@@ -241,7 +254,7 @@ export default function CompanyMasterPage() {
                     {company.phone}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {company.contact}
+                    {company.contactPerson}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {company.president}
@@ -282,20 +295,36 @@ export default function CompanyMasterPage() {
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   タイプ <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={formData.type}
-                  onChange={(e) => setFormData({...formData, type: e.target.value as 'manufacturer' | 'packing' | 'forwarder'})}
+                    onChange={(e) => setFormData({...formData, type: e.target.value as 'manufacturer' | 'packer' | 'forwarder'})}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   required
                 >
                   <option value="manufacturer">メーカー</option>
-                  <option value="packing">梱包業者</option>
+                    <option value="packer">梱包業者</option>
                   <option value="forwarder">フォワーダー</option>
                 </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    会社コード <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.code}
+                    onChange={(e) => setFormData({...formData, code: e.target.value})}
+                    placeholder="例: MFR-KOUDA"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
               </div>
 
               <div>
@@ -306,7 +335,7 @@ export default function CompanyMasterPage() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="例: ABC製造株式会社"
+                  placeholder="例: 幸田商店"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   required
                 />
@@ -363,9 +392,9 @@ export default function CompanyMasterPage() {
                   </label>
                   <input
                     type="text"
-                    value={formData.contact}
-                    onChange={(e) => setFormData({...formData, contact: e.target.value})}
-                    placeholder="例: 山田太郎"
+                    value={formData.contactPerson}
+                    onChange={(e) => setFormData({...formData, contactPerson: e.target.value})}
+                    placeholder="例: 幸田太郎"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                     required
                   />
@@ -383,6 +412,19 @@ export default function CompanyMasterPage() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  備考
+                </label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                  placeholder="例: きな粉、米の粉、黒ごまアーモンドきな粉、ほしいもの製造元"
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                />
               </div>
 
               <div className="flex justify-end space-x-3 pt-4">

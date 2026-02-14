@@ -81,8 +81,8 @@ export default function CartonMasterPage() {
     <div className="min-h-screen bg-gray-50">
       <Header activeItem="出荷計画" role="admin" />
       <Navigation 
-        items={['ダッシュボード', '出荷計画', '商品マスタ', '取引先', 'ユーザー管理', 'レポート']}
-        activeItem="出荷計画" 
+        items={['ダッシュボード', '出荷計画', '商品マスタ', '段ボールマスタ', '取引先', 'ユーザー管理', 'レポート']}
+        activeItem="段ボールマスタ" 
         activeColor="indigo"
         role="admin" 
       />
@@ -235,9 +235,21 @@ export default function CartonMasterPage() {
                   const outerSumCm = (outerSum / 10).toFixed(0);
                   
                   // パレット配置情報を取得
-                  const palletInfo = carton.palletConfig 
-                    ? `1段${carton.palletConfig.boxesPerLayer}箱×${carton.palletConfig.layers}段`
-                    : '-';
+                  let palletInfo = '-';
+                  if (carton.palletConfig) {
+                    palletInfo = `1段${carton.palletConfig.boxesPerLayer}箱×${carton.palletConfig.layers}段`;
+                    
+                    // 高さ情報を追加
+                    let heightMm: number;
+                    if (carton.palletLoadingDetails) {
+                      // パレット積載実績がある場合はその高さを使用
+                      heightMm = carton.palletLoadingDetails.heightMm;
+                    } else {
+                      // パレット積載実績がない場合は段ボール高さ×段数で計算
+                      heightMm = carton.innerHeight * carton.palletConfig.layers;
+                    }
+                    palletInfo += ` / 高さ${heightMm}mm`;
+                  }
                   
                   // 実績商品を取得
                   const relatedProducts = cartonProductMapping[carton.code] || [];
@@ -285,6 +297,15 @@ export default function CartonMasterPage() {
                                   <span className="mt-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                                     パレットぴったり
                                   </span>
+                                )}
+                                {carton.palletLoadingDetails && (
+                                  <div className="mt-2 text-xs text-gray-600 bg-green-50 p-2 rounded">
+                                    <div className="font-semibold text-green-800 mb-1">📦 パレット積載実績</div>
+                                    <div>1段{carton.palletLoadingDetails.cartonsPerLayer}箱 × {carton.palletLoadingDetails.totalLayers}段 = {carton.palletLoadingDetails.totalCartons}箱</div>
+                                    <div>総袋数: {carton.palletLoadingDetails.totalBags}袋</div>
+                                    <div>高さ{carton.palletLoadingDetails.heightMm}mm × 幅{carton.palletLoadingDetails.widthMm}mm</div>
+                                    <div className="font-medium text-green-700">重量: {carton.palletLoadingDetails.weightKg}kg</div>
+                                  </div>
                                 )}
                               </div>
                             ))}

@@ -42,3 +42,8 @@ if (priceData.length > 0) {
   console.log(`数量: ${sortedByPrice[0].quantity} → 単価: ${sortedByPrice[0].price}`);
 }
 
+
+
+
+
+

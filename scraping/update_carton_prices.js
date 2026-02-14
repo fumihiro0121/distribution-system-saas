@@ -190,3 +190,8 @@ async function updateAllCartons() {
 // 実行
 updateAllCartons().catch(console.error);
 
+
+
+
+
+

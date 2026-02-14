@@ -30,3 +30,8 @@ echo 結果は scraping\data\page_structure.html を確認してください
 echo =========================================
 pause
 
+
+
+
+
+

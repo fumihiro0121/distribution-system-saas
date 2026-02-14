@@ -19,6 +19,17 @@ export interface Carton {
     layers: number;
     total: number;
   } | null;
+  // パレット積載詳細情報（実績ベース）
+  palletLoadingDetails?: {
+    cartonsPerLayer: number; // パレット1段の箱数
+    totalLayers: number; // パレット段数
+    totalCartons: number; // パレット総箱数
+    totalBags: number; // パレット総袋数
+    heightMm: number; // パレット高さ（mm）
+    widthMm: number; // パレット幅（mm）
+    weightKg: number; // パレット重さ（kg）
+    productName: string; // 対応商品名
+  };
 }
 
 // 内寸から容積を計算（mm³）
@@ -20822,8 +20833,18 @@ export const allCartons: Carton[] = [
     "url": "",
     "palletConfig": {
       "boxesPerLayer": 13,
-      "layers": 14,
-      "total": 182
+      "layers": 10,
+      "total": 130
+    },
+    "palletLoadingDetails": {
+      "cartonsPerLayer": 13,
+      "totalLayers": 10,
+      "totalCartons": 130,
+      "totalBags": 1300,
+      "heightMm": 1150,
+      "widthMm": 1100,
+      "weightKg": 247.0,
+      "productName": "黒ゴマアーモンドきな粉150g×10袋セット"
     }
   },
   {
@@ -20841,8 +20862,18 @@ export const allCartons: Carton[] = [
     "url": "",
     "palletConfig": {
       "boxesPerLayer": 13,
-      "layers": 12,
-      "total": 156
+      "layers": 10,
+      "total": 135
+    },
+    "palletLoadingDetails": {
+      "cartonsPerLayer": 13,
+      "totalLayers": 10,
+      "totalCartons": 135,
+      "totalBags": 2700,
+      "heightMm": 1300,
+      "widthMm": 1100,
+      "weightKg": 469.13,
+      "productName": "きな粉150g×20袋セット"
     }
   },
   {
@@ -20860,8 +20891,18 @@ export const allCartons: Carton[] = [
     "url": "",
     "palletConfig": {
       "boxesPerLayer": 12,
-      "layers": 9,
-      "total": 108
+      "layers": 6,
+      "total": 72
+    },
+    "palletLoadingDetails": {
+      "cartonsPerLayer": 12,
+      "totalLayers": 6,
+      "totalCartons": 72,
+      "totalBags": 720,
+      "heightMm": 1225,
+      "widthMm": 1100,
+      "weightKg": 389.88,
+      "productName": "きな粉 500g×10袋セット"
     }
   },
   {
@@ -20879,8 +20920,18 @@ export const allCartons: Carton[] = [
     "url": "",
     "palletConfig": {
       "boxesPerLayer": 10,
-      "layers": 10,
-      "total": 100
+      "layers": 8,
+      "total": 80
+    },
+    "palletLoadingDetails": {
+      "cartonsPerLayer": 10,
+      "totalLayers": 8,
+      "totalCartons": 80,
+      "totalBags": 800,
+      "heightMm": 1260,
+      "widthMm": 1100,
+      "weightKg": 392.0,
+      "productName": "米の粉 450g×10袋セット"
     }
   },
   {
@@ -20912,9 +20963,19 @@ export const allCartons: Carton[] = [
     "weight": 54,
     "url": "",
     "palletConfig": {
-      "boxesPerLayer": 12,
-      "layers": 14,
-      "total": 168
+      "boxesPerLayer": 36,
+      "layers": 10,
+      "total": 360
+    },
+    "palletLoadingDetails": {
+      "cartonsPerLayer": 36,
+      "totalLayers": 10,
+      "totalCartons": 360,
+      "totalBags": 3600,
+      "heightMm": 1100,
+      "widthMm": 1100,
+      "weightKg": 304.0,
+      "productName": "茨城県産べにはるかほしいも10袋セット"
     }
   },
   {
@@ -20947,8 +21008,18 @@ export const allCartons: Carton[] = [
     "url": "",
     "palletConfig": {
       "boxesPerLayer": 12,
-      "layers": 16,
-      "total": 192
+      "layers": 10,
+      "total": 120
+    },
+    "palletLoadingDetails": {
+      "cartonsPerLayer": 12,
+      "totalLayers": 10,
+      "totalCartons": 120,
+      "totalBags": 1200,
+      "heightMm": 1000,
+      "widthMm": 1100,
+      "weightKg": 334.8,
+      "productName": "粉黒糖10袋セット"
     }
   },
   {
@@ -20966,8 +21037,18 @@ export const allCartons: Carton[] = [
     "url": "",
     "palletConfig": {
       "boxesPerLayer": 12,
-      "layers": 13,
-      "total": 156
+      "layers": 10,
+      "total": 120
+    },
+    "palletLoadingDetails": {
+      "cartonsPerLayer": 12,
+      "totalLayers": 10,
+      "totalCartons": 120,
+      "totalBags": 1200,
+      "heightMm": 1200,
+      "widthMm": 1100,
+      "weightKg": 397.2,
+      "productName": "かちわり黒糖10袋セット"
     }
   },
   {
@@ -20987,6 +21068,16 @@ export const allCartons: Carton[] = [
       "boxesPerLayer": 6,
       "layers": 6,
       "total": 36
+    },
+    "palletLoadingDetails": {
+      "cartonsPerLayer": 6,
+      "totalLayers": 6,
+      "totalCartons": 36,
+      "totalBags": 1080,
+      "heightMm": 1530,
+      "widthMm": 1100,
+      "weightKg": 576.0,
+      "productName": "米麹500g30袋セット"
     }
   }
 ];

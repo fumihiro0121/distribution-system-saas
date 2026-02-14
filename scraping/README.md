@@ -100,3 +100,8 @@ with open('page_structure.html', 'w', encoding='utf-8') as f:
 
 このスクリプトは教育目的で提供されています。
 
+
+
+
+
+

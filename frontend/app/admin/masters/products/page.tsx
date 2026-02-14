@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { products as initialProducts, productCategories, suppliers, Product } from '@/data/products';
+import { companies, getCompanyById } from '@/data/companies';
 import Header from '@/app/components/Header';
 import Navigation from '@/app/components/Navigation';
 
@@ -147,7 +148,7 @@ export default function ProductMasterPage() {
         userName={user.name}
       />
       <Navigation 
-        items={['ダッシュボード', '出荷計画', '商品マスタ', '取引先', 'ユーザー管理', 'レポート']}
+        items={['ダッシュボード', '出荷計画', '商品マスタ', '段ボールマスタ', '取引先', 'ユーザー管理', 'レポート']}
         activeItem="商品マスタ"
         activeColor="indigo"
         role="admin"
@@ -224,11 +225,12 @@ export default function ProductMasterPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU / JAN</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ASIN / FNSKU</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">HSコード</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">仕入先</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">メーカー</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">カテゴリ</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">仕入金額</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">重量</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">段ボール</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">パレット積載</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
                 </tr>
               </thead>
@@ -259,7 +261,15 @@ export default function ProductMasterPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900">{product.hsCode || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{product.supplier || '-'}</td>
+                    <td className="px-4 py-3">
+                      {product.manufacturerId ? (
+                        <div className="text-sm font-medium text-gray-900">
+                          {getCompanyById(product.manufacturerId)?.name || product.supplier || '-'}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500">{product.supplier || '-'}</div>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       {product.category && (
                         <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
@@ -278,6 +288,23 @@ export default function ProductMasterPage() {
                           <div className="text-sm text-gray-900">{product.standardBoxSetQuantity}セット</div>
                           <div className="text-xs text-gray-500">
                             {product.boxLengthCm > 0 && `${product.boxLengthCm}×${product.boxWidthCm}×${product.boxHeightCm}cm`}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {product.palletLoading ? (
+                        <div className="text-xs">
+                          <div className="text-gray-900 font-medium mb-1 flex items-center gap-1">
+                            <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-xs">ぴったり</span>
+                            1c=1p {product.palletLoading.cartonsPerShipment}c/s
+                          </div>
+                          <div className="text-gray-600 space-y-0.5">
+                            <div>📦 1段{product.palletLoading.cartonsPerPallet}箱 × {product.palletLoading.layers}段</div>
+                            <div>📏 高さ{product.palletLoading.heightMm}mm × 幅{product.palletLoading.widthMm}mm</div>
+                            <div className="font-medium text-indigo-600">⚖️ {(product.palletLoading.weightG / 1000).toFixed(1)}kg</div>
                           </div>
                         </div>
                       ) : (

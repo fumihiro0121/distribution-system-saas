@@ -19,6 +19,8 @@ export default function Navigation({ items, activeItem, activeColor, role }: Nav
             return '/admin/shipments';
           case '商品マスタ':
             return '/admin/masters/products';
+          case '段ボールマスタ':
+            return '/admin/masters/cartons';
           case '取引先':
             return '/admin/masters/companies';
           case 'ユーザー管理':
@@ -95,14 +97,14 @@ export default function Navigation({ items, activeItem, activeColor, role }: Nav
   return (
     <nav className="bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex space-x-8">
+        <div className="flex space-x-6">
           {items.map((item) => (
             <a
               key={item}
               href={getTabLink(item)}
               target="_blank"
               rel="noopener noreferrer"
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              className={`py-1.5 px-1 border-b-2 font-medium text-xs ${
                 item === activeItem
                   ? getActiveClasses()
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'

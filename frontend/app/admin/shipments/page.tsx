@@ -177,7 +177,7 @@ export default function ShipmentsListPage() {
         userName={user.name}
       />
       <Navigation 
-        items={['ダッシュボード', '出荷計画', '商品マスタ', '取引先', 'ユーザー管理', 'レポート']}
+        items={['ダッシュボード', '出荷計画', '商品マスタ', '段ボールマスタ', '取引先', 'ユーザー管理', 'レポート']}
         activeItem="出荷計画"
         activeColor="indigo"
         role="admin"
@@ -415,5 +415,7 @@ export default function ShipmentsListPage() {
     </div>
   );
 }
+
+
 
 
