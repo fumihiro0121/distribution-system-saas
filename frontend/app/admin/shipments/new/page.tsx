@@ -193,6 +193,32 @@ export default function UnifiedPackingPage() {
   const [cartonSearch, setCartonSearch] = useState('');
   const [showCartonSearch, setShowCartonSearch] = useState<number | null>(null);
   
+  // 段ボールサイズ検索ドロップダウン
+  const [cartonSearchOpen, setCartonSearchOpen] = useState<string | null>(null);
+  const [cartonSearchText, setCartonSearchText] = useState('');
+  
+  // パレット選択モーダル
+  const [palletSelectPrompt, setPalletSelectPrompt] = useState<{
+    groupCartonIds: string[];
+    groupCount: number;
+    groupName: string;
+  } | null>(null);
+  
+  // パレット間移動モーダル
+  const [interPalletMovePrompt, setInterPalletMovePrompt] = useState<{
+    sourcePalletId: string;
+    productId: number;
+    productName: string;
+    maxBoxes: number;
+    cartonIds: string[]; // 移動候補の段ボールID一覧
+  } | null>(null);
+  const [moveBoxCount, setMoveBoxCount] = useState(1);
+  const [moveTargetPalletId, setMoveTargetPalletId] = useState<string | null>(null);
+  const [moveTargetLayer, setMoveTargetLayer] = useState(1);
+  
+  // パレット状態テーブル表示切り替え
+  const [palletTableExpanded, setPalletTableExpanded] = useState<Record<string, boolean>>({});
+  
   // ドラッグ&ドロップ用の状態
   const [draggedProduct, setDraggedProduct] = useState<{id: number; name: string; remainingQuantity: number} | null>(null);
   const [draggedCarton, setDraggedCarton] = useState<{id: string; name: string; groupIds?: string[]; totalCount?: number} | null>(null);
@@ -310,6 +336,20 @@ export default function UnifiedPackingPage() {
       localStorage.setItem('shipment_packing_state', JSON.stringify(packingState));
     }
   }, [packingState]);
+
+  // 段ボール検索ドロップダウンの外側クリックで閉じる
+  useEffect(() => {
+    if (!cartonSearchOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-carton-dropdown]')) {
+        setCartonSearchOpen(null);
+        setCartonSearchText('');
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [cartonSearchOpen]);
 
   // フロー情報を安全に取得するヘルパー
   const getFlowConfig = (flow: ShipmentFlow) => {
@@ -441,6 +481,9 @@ export default function UnifiedPackingPage() {
       if (existingGroup) {
         existingGroup.cartonIds.push(carton.id);
         existingGroup.count++;
+        if (!(carton.assignedToPallet)) {
+          existingGroup.assignedToPallet = false;
+        }
       } else {
         groups.push({
           key,
@@ -593,9 +636,32 @@ export default function UnifiedPackingPage() {
     
     const exists = activeFlow.selectedProducts.find(p => p.productId === productId);
     if (exists) {
-      // 削除
+      // ①→②→③ 連動削除: この商品を含む段ボールIDを特定し、パレットからも除去
+      const cartonIdsToRemove = new Set(
+        activeFlow.cartons
+          .filter(c => c.contents.some(cnt => cnt.productId === productId))
+          .map(c => c.id)
+      );
+      if (cartonIdsToRemove.size > 0) {
+        const product = productsData.find(p => p.id === productId);
+        const onPallet = activeFlow.pallets.some(p =>
+          p.layers.some(l => l.cartons.some(cid => cartonIdsToRemove.has(cid)))
+        );
+        const msg = onPallet
+          ? `「${product?.productName}」の段ボール（${cartonIdsToRemove.size}箱）がパレットに配置済みです。商品を削除すると段ボールとパレットからも削除されます。続けますか？`
+          : `「${product?.productName}」の段ボール（${cartonIdsToRemove.size}箱）が段ボール設計にあります。商品を削除すると段ボールも削除されます。続けますか？`;
+        if (!confirm(msg)) return;
+      }
       updateActiveFlow({
-        selectedProducts: activeFlow.selectedProducts.filter(p => p.productId !== productId)
+        selectedProducts: activeFlow.selectedProducts.filter(p => p.productId !== productId),
+        cartons: activeFlow.cartons.filter(c => !cartonIdsToRemove.has(c.id)),
+        pallets: activeFlow.pallets.map(p => ({
+          ...p,
+          layers: p.layers.map(l => ({
+            ...l,
+            cartons: l.cartons.filter(cid => !cartonIdsToRemove.has(cid))
+          })).filter(l => l.cartons.length > 0)
+        }))
       });
     } else {
       // 追加
@@ -628,6 +694,290 @@ export default function UnifiedPackingPage() {
           : p
       )
     });
+  };
+
+  // グループの箱数を変更する
+  const handleChangeBoxCount = (groupCartonIds: string[], currentCount: number, newCount: number) => {
+    if (!activeFlow || newCount < 1) return;
+    
+    if (newCount > currentCount) {
+      const templateCarton = activeFlow.cartons.find(c => c.id === groupCartonIds[0]);
+      if (!templateCarton) return;
+      const additionalCartons = [];
+      for (let i = 0; i < newCount - currentCount; i++) {
+        additionalCartons.push({
+          ...templateCarton,
+          id: `carton-${Date.now()}-add-${i}`,
+          assignedToPallet: false,
+          palletId: undefined
+        });
+      }
+      updateActiveFlow({
+        cartons: [...activeFlow.cartons, ...additionalCartons]
+      });
+    } else {
+      const idsToRemove = groupCartonIds.slice(newCount);
+      updateActiveFlow({
+        cartons: activeFlow.cartons.filter(c => !idsToRemove.includes(c.id)),
+        pallets: activeFlow.pallets.map(p => ({
+          ...p,
+          layers: p.layers.map(l => ({
+            ...l,
+            cartons: l.cartons.filter(cid => !idsToRemove.includes(cid))
+          })).filter(l => l.cartons.length > 0)
+        }))
+      });
+    }
+  };
+
+  // グループ内の1箱あたりのセット数を変更する
+  const handleChangeSetsPerBox = (groupCartonIds: string[], contentIndex: number, newSets: number, product: any) => {
+    if (!activeFlow || !product || newSets < 0) return;
+    const newBagQuantity = Math.round(newSets * product.bagsPerSet);
+    updateActiveFlow({
+      cartons: activeFlow.cartons.map(c =>
+        groupCartonIds.includes(c.id)
+          ? {
+              ...c,
+              contents: c.contents.map((cnt, i) =>
+                i === contentIndex ? { ...cnt, quantity: newBagQuantity } : cnt
+              )
+            }
+          : c
+      )
+    });
+  };
+
+  // ボタンクリックで①→②に転送（ドラッグ不要）
+  const handleTransferToCartonDesign = (productId: number) => {
+    if (!activeFlow) return;
+    const product = productsData.find(p => p.id === productId);
+    const selectedProduct = activeFlow.selectedProducts.find(p => p.productId === productId);
+    if (!product || !selectedProduct) return;
+
+    const actualAssigned = calculateActualAssignedQuantity(productId, activeFlow.cartons);
+    const actualRemaining = selectedProduct.requestedQuantity - actualAssigned;
+
+    if (actualRemaining <= 0) {
+      alert('この商品の残り数量がありません');
+      return;
+    }
+
+    const optimalCarton = selectOptimalCarton(productId);
+    if (!optimalCarton) {
+      alert('適切な段ボールが見つかりませんでした');
+      return;
+    }
+
+    const cartonMapping = cartonProductMapping[optimalCarton.code];
+    const productMapping = cartonMapping?.find(m => m.productName === product.productName);
+    const cartonCapacity = productMapping?.packingBags || 10;
+
+    const totalBagsRemaining = actualRemaining * product.bagsPerSet;
+    const numberOfCartons = Math.ceil(totalBagsRemaining / cartonCapacity);
+
+    const newCartons = [];
+    let remainingBags = totalBagsRemaining;
+
+    for (let i = 0; i < numberOfCartons; i++) {
+      const bagsInThisCarton = Math.min(cartonCapacity, remainingBags);
+      newCartons.push({
+        id: `carton-${Date.now()}-${i}`,
+        cartonCode: optimalCarton.code,
+        cartonName: optimalCarton.name,
+        contents: [{ productId, quantity: bagsInThisCarton }],
+        currentWeight: optimalCarton.weight || 0,
+        assignedToPallet: false
+      });
+      remainingBags -= bagsInThisCarton;
+    }
+
+    updateActiveFlow({
+      cartons: [...activeFlow.cartons, ...newCartons]
+    });
+  };
+
+  // ボタンクリックで②→③に転送（パレット選択UI表示）
+  const handleTransferToPallet = (groupCartonIds: string[], groupCount: number, groupName: string) => {
+    if (!activeFlow) return;
+
+    const unassignedCartonIds = groupCartonIds.filter(id =>
+      !activeFlow.pallets.some(p =>
+        p.layers.some(layer => layer.cartons.includes(id))
+      )
+    );
+
+    if (unassignedCartonIds.length === 0) {
+      alert('このグループの段ボールはすべてパレットに配置済みです');
+      return;
+    }
+
+    // パレットがない場合は直接新規作成
+    if (activeFlow.pallets.length === 0) {
+      executeTransferToPallet(unassignedCartonIds, null);
+    } else {
+      setPalletSelectPrompt({ groupCartonIds: unassignedCartonIds, groupCount, groupName });
+    }
+  };
+
+  // 実際のパレット転送処理
+  const executeTransferToPallet = (unassignedCartonIds: string[], targetPalletIdOrNull: string | null) => {
+    if (!activeFlow) return;
+
+    let targetPalletId: string;
+    let updatedPallets = [...activeFlow.pallets];
+
+    if (targetPalletIdOrNull === null) {
+      targetPalletId = `pallet-${Date.now()}`;
+      updatedPallets.push({
+        id: targetPalletId,
+        size: '1100',
+        layers: []
+      });
+    } else {
+      targetPalletId = targetPalletIdOrNull;
+    }
+
+    const firstCarton = activeFlow.cartons.find(c => c.id === unassignedCartonIds[0]);
+    const cartonDetail = firstCarton ? allCartons.find(c => c.code === firstCarton.cartonCode) : null;
+
+    let newLayers: { layerNumber: number; cartons: string[] }[] = [];
+    const targetPallet = updatedPallets.find(p => p.id === targetPalletId);
+    const startLayerNumber = (targetPallet?.layers.length || 0) + 1;
+
+    const palletLoading = cartonDetail?.palletLoadingDetails;
+    const palletCfg = cartonDetail?.palletConfig;
+    const cartonsPerLayer = palletLoading?.cartonsPerLayer || palletCfg?.boxesPerLayer || 0;
+    const configuredLayers = palletLoading?.totalLayers || palletCfg?.layers || 0;
+    
+    if (cartonsPerLayer > 0) {
+      const totalLayersNeeded = Math.ceil(unassignedCartonIds.length / cartonsPerLayer);
+      const layersToUse = Math.max(configuredLayers, totalLayersNeeded);
+      
+      const isKinako20 = firstCarton?.contents.some(content => {
+        const product = productsData.find(p => p.id === content.productId);
+        return product?.productName === 'きな粉150g×20袋セット';
+      });
+
+      if (isKinako20) {
+        // きな粉150g×20袋セット: 13箱×10段 + 2段ペアの隙間に各1箱縦置き×5 = 135箱
+        // 構造: [13箱横][13箱横][1箱縦] × 5ペア
+        let cartonIndex = 0;
+        let currentLayerNumber = startLayerNumber;
+        
+        for (let pair = 0; pair < 5 && cartonIndex < unassignedCartonIds.length; pair++) {
+          // ペアの1段目（13箱横置き）
+          const layer1 = unassignedCartonIds.slice(cartonIndex, cartonIndex + cartonsPerLayer);
+          if (layer1.length > 0) {
+            newLayers.push({ layerNumber: currentLayerNumber++, cartons: layer1 });
+            cartonIndex += layer1.length;
+          }
+          // ペアの2段目（13箱横置き）
+          if (cartonIndex < unassignedCartonIds.length) {
+            const layer2 = unassignedCartonIds.slice(cartonIndex, cartonIndex + cartonsPerLayer);
+            if (layer2.length > 0) {
+              newLayers.push({ layerNumber: currentLayerNumber++, cartons: layer2 });
+              cartonIndex += layer2.length;
+            }
+          }
+          // 2段の隙間に1箱縦置き
+          if (cartonIndex < unassignedCartonIds.length) {
+            const verticalBox = unassignedCartonIds.slice(cartonIndex, cartonIndex + 1);
+            if (verticalBox.length > 0) {
+              newLayers.push({ layerNumber: currentLayerNumber++, cartons: verticalBox });
+              cartonIndex += 1;
+            }
+          }
+        }
+      } else {
+        let cartonIndex = 0;
+        for (let layer = 0; layer < layersToUse && cartonIndex < unassignedCartonIds.length; layer++) {
+          const cartonsForThisLayer = unassignedCartonIds.slice(cartonIndex, cartonIndex + cartonsPerLayer);
+          if (cartonsForThisLayer.length > 0) {
+            newLayers.push({ layerNumber: startLayerNumber + layer, cartons: cartonsForThisLayer });
+            cartonIndex += cartonsPerLayer;
+          }
+        }
+      }
+    } else {
+      newLayers = [{ layerNumber: startLayerNumber, cartons: unassignedCartonIds }];
+    }
+
+    updateActiveFlow({
+      pallets: updatedPallets.map(p =>
+        p.id === targetPalletId
+          ? { ...p, layers: [...p.layers, ...newLayers] }
+          : p
+      ),
+      cartons: activeFlow.cartons.map(c =>
+        unassignedCartonIds.includes(c.id)
+          ? { ...c, assignedToPallet: true, palletId: targetPalletId }
+          : c
+      )
+    });
+    
+    setPalletSelectPrompt(null);
+  };
+
+  // パレット間移動を実行
+  const executeInterPalletMove = () => {
+    if (!activeFlow || !interPalletMovePrompt || !moveTargetPalletId) return;
+    
+    const { sourcePalletId, cartonIds } = interPalletMovePrompt;
+    const count = Math.min(moveBoxCount, cartonIds.length);
+    if (count <= 0) return;
+    
+    const cartonsToMove = cartonIds.slice(0, count);
+    const targetPallet = activeFlow.pallets.find(p => p.id === moveTargetPalletId);
+    if (!targetPallet) return;
+    
+    // 元パレットから削除
+    const updatedPallets = activeFlow.pallets.map(p => {
+      if (p.id === sourcePalletId) {
+        return {
+          ...p,
+          layers: p.layers.map(layer => ({
+            ...layer,
+            cartons: layer.cartons.filter(id => !cartonsToMove.includes(id))
+          })).filter(layer => layer.cartons.length > 0)
+        };
+      }
+      if (p.id === moveTargetPalletId) {
+        // 移動先パレットの指定段に追加
+        const existingLayer = p.layers.find(l => l.layerNumber === moveTargetLayer);
+        if (existingLayer) {
+          return {
+            ...p,
+            layers: p.layers.map(l =>
+              l.layerNumber === moveTargetLayer
+                ? { ...l, cartons: [...l.cartons, ...cartonsToMove] }
+                : l
+            )
+          };
+        } else {
+          return {
+            ...p,
+            layers: [...p.layers, { layerNumber: moveTargetLayer, cartons: cartonsToMove }]
+              .sort((a, b) => a.layerNumber - b.layerNumber)
+          };
+        }
+      }
+      return p;
+    });
+    
+    updateActiveFlow({
+      pallets: updatedPallets,
+      cartons: activeFlow.cartons.map(c =>
+        cartonsToMove.includes(c.id)
+          ? { ...c, palletId: moveTargetPalletId }
+          : c
+      )
+    });
+    
+    setInterPalletMovePrompt(null);
+    setMoveBoxCount(1);
+    setMoveTargetPalletId(null);
+    setMoveTargetLayer(1);
   };
 
   // ドラッグ&ドロップハンドラー - 商品をドラッグ開始
@@ -1800,6 +2150,19 @@ export default function UnifiedPackingPage() {
                                           </span>
                                         </div>
                                       )}
+                                      {actualRemaining > 0 && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleTransferToCartonDesign(product.id);
+                                          }}
+                                          className="w-full mt-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs font-medium transition-colors flex items-center justify-center gap-1"
+                                        >
+                                          <span>→②</span>
+                                          <span>段ボール設計に移動</span>
+                                          <span className="text-blue-200">({actualRemaining}セット)</span>
+                                        </button>
+                                      )}
                                     </>
                                   );
                                 })()}
@@ -2030,15 +2393,40 @@ export default function UnifiedPackingPage() {
                   style={{width: `${calculated.totalCartons > 0 ? 50 : 0}%`}}
                 />
               </div>
+              {/* 割当状況サマリー */}
+              {activeFlow && activeFlow.selectedProducts.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {activeFlow.selectedProducts.map(sp => {
+                    const product = productsData.find(p => p.id === sp.productId);
+                    if (!product) return null;
+                    const actualAssigned = calculateActualAssignedQuantity(sp.productId, activeFlow.cartons);
+                    const diff = sp.requestedQuantity - actualAssigned;
+                    return (
+                      <div key={sp.productId} className={`text-xs px-2 py-1 rounded flex justify-between ${
+                        diff === 0 ? 'bg-green-50 text-green-700' :
+                        diff > 0 ? 'bg-orange-50 text-orange-700' :
+                        'bg-red-50 text-red-700'
+                      }`}>
+                        <span className="truncate mr-2">{product.productName}</span>
+                        <span className="font-medium whitespace-nowrap">
+                          {diff === 0 ? '✓ 割当完了' :
+                           diff > 0 ? `${diff}セット不足` :
+                           `${Math.abs(diff)}セット超過`}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             
             {/* 段ボールリスト（アクティブなフロー用） */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {(activeFlow?.cartons.length || 0) === 0 ? (
-                <div className="text-center py-12 text-gray-400 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50 mx-2 transition-all hover:border-blue-500 hover:bg-blue-100">
-                  <div className="text-4xl mb-2 animate-bounce">📦</div>
-                  <p className="text-sm font-semibold text-blue-600 mb-1">ドロップゾーン</p>
-                  <p className="text-xs text-gray-600">左側の商品をここにドラッグ&ドロップ</p>
+                <div className="text-center py-12 text-gray-400 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50 mx-2 transition-all">
+                  <div className="text-4xl mb-2">📦</div>
+                  <p className="text-sm font-semibold text-blue-600 mb-1">段ボール設計</p>
+                  <p className="text-xs text-gray-600">左側の商品で「→② 段ボール設計に移動」ボタンをクリック</p>
                   <p className="text-xs text-gray-500 mt-1">自動的に最適な段ボールが選択されます</p>
                 </div>
               ) : (
@@ -2100,9 +2488,20 @@ export default function UnifiedPackingPage() {
                     <button
                         onClick={() => {
                           if (!activeFlow) return;
-                          // グループ内のすべての段ボールを削除
+                          const idsToRemove = new Set(group.cartonIds);
+                          const onPallet = activeFlow.pallets.some(p =>
+                            p.layers.some(l => l.cartons.some(cid => idsToRemove.has(cid)))
+                          );
+                          if (onPallet && !confirm(`この段ボールグループ（${group.count}箱）はパレットに配置済みです。削除するとパレットからも削除されます。続けますか？`)) return;
                           updateActiveFlow({
-                            cartons: activeFlow.cartons.filter(c => !group.cartonIds.includes(c.id))
+                            cartons: activeFlow.cartons.filter(c => !idsToRemove.has(c.id)),
+                            pallets: activeFlow.pallets.map(p => ({
+                              ...p,
+                              layers: p.layers.map(l => ({
+                                ...l,
+                                cartons: l.cartons.filter(cid => !idsToRemove.has(cid))
+                              })).filter(l => l.cartons.length > 0)
+                            }))
                           });
                         }}
                         className="text-xs text-red-600 hover:text-red-800"
@@ -2116,48 +2515,113 @@ export default function UnifiedPackingPage() {
                       <label className="block text-xs font-semibold text-purple-900 mb-1">
                         📦 段ボールサイズ変更{group.count > 1 && ` (${group.count}箱すべて)`}:
                       </label>
-                      <select
-                        value={group.cartonCode}
-                        onChange={(e) => {
-                          if (!activeFlow) return;
-                          const newCartonCode = e.target.value;
-                          const newCartonDetail = allCartons.find(c => c.code === newCartonCode);
-                          if (!newCartonDetail) return;
-                          
-                          // グループ内のすべての段ボールのサイズを変更
-                          updateActiveFlow({
-                            cartons: activeFlow.cartons.map(c =>
-                              group.cartonIds.includes(c.id)
-                                ? { 
-                                    ...c, 
-                                    cartonCode: newCartonDetail.code,
-                                    cartonName: newCartonDetail.name
-                                  }
-                                : c
-                            )
-                          });
-                        }}
-                        className="w-full px-2 py-1 text-xs border border-purple-300 rounded focus:ring-1 focus:ring-purple-500 bg-white"
-                      >
-                        {allCartons.map(cartonOption => {
-                          let displayName = `${cartonOption.name} (${cartonOption.code})`;
-                          if (cartonOption.palletLoadingDetails) {
-                            displayName += ` [1段${cartonOption.palletLoadingDetails.cartonsPerLayer}箱×${cartonOption.palletLoadingDetails.totalLayers}段 / 高さ${cartonOption.palletLoadingDetails.heightMm}mm]`;
-                          }
-                          return (
-                            <option key={cartonOption.code} value={cartonOption.code}>
-                              {displayName}
-                            </option>
-                          );
-                        })}
-                      </select>
+                      <div className="relative" data-carton-dropdown>
+                        <button
+                          onClick={() => {
+                            if (cartonSearchOpen === group.key) {
+                              setCartonSearchOpen(null);
+                              setCartonSearchText('');
+                            } else {
+                              setCartonSearchOpen(group.key);
+                              setCartonSearchText('');
+                            }
+                          }}
+                          className="w-full px-2 py-1.5 text-xs border border-purple-300 rounded bg-white text-left truncate hover:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                        >
+                          {(() => {
+                            const current = allCartons.find(c => c.code === group.cartonCode);
+                            if (!current) return group.cartonCode;
+                            let name = `${current.name} (${current.code})`;
+                            if (current.palletLoadingDetails) {
+                              name += ` [1段${current.palletLoadingDetails.cartonsPerLayer}箱×${current.palletLoadingDetails.totalLayers}段]`;
+                            }
+                            return name;
+                          })()}
+                        </button>
+                        {cartonSearchOpen === group.key && (
+                          <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-purple-300 rounded-lg shadow-xl max-h-64 overflow-hidden">
+                            <div className="p-2 border-b border-gray-200 sticky top-0 bg-white">
+                              <input
+                                type="text"
+                                autoFocus
+                                placeholder="段ボール名・コード・サイズで検索..."
+                                value={cartonSearchText}
+                                onChange={(e) => setCartonSearchText(e.target.value)}
+                                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                              />
+                            </div>
+                            <div className="overflow-y-auto max-h-48">
+                              {allCartons
+                                .filter(c => {
+                                  if (!cartonSearchText) return true;
+                                  const q = cartonSearchText.toLowerCase();
+                                  const searchStr = `${c.name} ${c.code} ${c.innerLength}×${c.innerWidth}×${c.innerHeight} ${c.deliverySize} ${c.palletLoadingDetails?.productName || ''}`.toLowerCase();
+                                  return searchStr.includes(q);
+                                })
+                                .map(cartonOption => {
+                                  const isSelected = cartonOption.code === group.cartonCode;
+                                  return (
+                                    <button
+                                      key={cartonOption.code}
+                                      onClick={() => {
+                                        if (!activeFlow) return;
+                                        const idsSet = new Set(group.cartonIds);
+                                        const hasAssigned = activeFlow.cartons.some(c => idsSet.has(c.id) && c.assignedToPallet);
+                                        if (hasAssigned && !confirm('この段ボールグループはパレットに配置済みです。サイズを変更するとパレットから取り外されます。続けますか？')) return;
+                                        updateActiveFlow({
+                                          cartons: activeFlow.cartons.map(c =>
+                                            idsSet.has(c.id)
+                                              ? { ...c, cartonCode: cartonOption.code, cartonName: cartonOption.name, assignedToPallet: false, palletId: undefined }
+                                              : c
+                                          ),
+                                          pallets: hasAssigned
+                                            ? activeFlow.pallets.map(p => ({
+                                                ...p,
+                                                layers: p.layers.map(l => ({
+                                                  ...l,
+                                                  cartons: l.cartons.filter(cid => !idsSet.has(cid))
+                                                })).filter(l => l.cartons.length > 0)
+                                              }))
+                                            : activeFlow.pallets
+                                        });
+                                        setCartonSearchOpen(null);
+                                        setCartonSearchText('');
+                                      }}
+                                      className={`w-full text-left px-3 py-2 text-xs hover:bg-purple-50 border-b border-gray-100 last:border-b-0 ${
+                                        isSelected ? 'bg-purple-100 font-semibold text-purple-900' : 'text-gray-700'
+                                      }`}
+                                    >
+                                      <div className="font-medium">{cartonOption.name}</div>
+                                      <div className="text-gray-500 mt-0.5">
+                                        {cartonOption.code} | {cartonOption.innerLength}×{cartonOption.innerWidth}×{cartonOption.innerHeight}mm
+                                        {cartonOption.palletLoadingDetails && (
+                                          <span className="text-purple-600 ml-1">
+                                            [1段{cartonOption.palletLoadingDetails.cartonsPerLayer}箱×{cartonOption.palletLoadingDetails.totalLayers}段 / 高さ{cartonOption.palletLoadingDetails.heightMm}mm]
+                                          </span>
+                                        )}
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              {allCartons.filter(c => {
+                                if (!cartonSearchText) return true;
+                                const q = cartonSearchText.toLowerCase();
+                                return `${c.name} ${c.code} ${c.innerLength}×${c.innerWidth}×${c.innerHeight} ${c.deliverySize} ${c.palletLoadingDetails?.productName || ''}`.toLowerCase().includes(q);
+                              }).length === 0 && (
+                                <div className="px-3 py-4 text-xs text-gray-400 text-center">
+                                  該当する段ボールが見つかりません
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
                     {group.contents.length === 0 ? (
                       <div className="text-xs text-gray-400 py-4 border-2 border-dashed border-gray-300 rounded text-center bg-gray-50">
-                        <div className="mb-1">📦 ドロップゾーン</div>
-                        <div>左側の商品をドラッグ&ドロップ</div>
-                        <div className="text-xs mt-1">または「おすすめ段ボール」で追加</div>
+                        <div className="mb-1">📦 商品未設定</div>
+                        <div>左側の商品で「→② 段ボール設計に移動」をクリック</div>
                       </div>
                     ) : (
                       <div className="space-y-2 bg-gray-50 p-2 rounded">
@@ -2188,7 +2652,7 @@ export default function UnifiedPackingPage() {
                                   </div>
                                 </div>
                                 <div className="mt-1 text-xs text-green-600 italic">
-                                  → パレットにD&Dすると自動的にこの配置で積載されます
+                                  → 「→③ パレット積付に移動」で自動的にこの配置で積載されます
                                 </div>
                               </div>
                             );
@@ -2198,16 +2662,22 @@ export default function UnifiedPackingPage() {
                         
                         {group.contents.map((content, contentIndex) => {
                           const product = productsData.find(p => p.id === content.productId);
+                          const setsPerBox = product ? content.quantity / product.bagsPerSet : 0;
+                          const totalSetsInGroup = setsPerBox * group.count;
+                          const selectedProduct = activeFlow?.selectedProducts.find(sp => sp.productId === content.productId);
+                          const totalRequested = selectedProduct?.requestedQuantity || 0;
+                          const totalAssigned = calculateActualAssignedQuantity(content.productId, activeFlow?.cartons || []);
+                          const diff = totalRequested - totalAssigned;
+                          
                           return (
                             <div key={content.productId} className="bg-white p-2 rounded border border-gray-200">
-                              <div className="flex justify-between items-start mb-1">
+                              <div className="flex justify-between items-start mb-2">
                                 <span className="text-xs text-gray-700 font-medium flex-1">
                                   {product?.productName}
                                 </span>
                                 <button
                                   onClick={() => {
                                     if (!activeFlow) return;
-                                    // グループ内のすべての段ボールからこの商品を削除（割当数量は自動計算される）
                                     updateActiveFlow({
                                       cartons: activeFlow.cartons.map(c =>
                                         group.cartonIds.includes(c.id)
@@ -2221,77 +2691,120 @@ export default function UnifiedPackingPage() {
                                   ×
                                 </button>
                               </div>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <label className="text-xs text-gray-500">1箱あたり:</label>
-                          <input
-                                  type="number"
-                                  min="1"
-                                  value={content.quantity}
-                            onChange={(e) => {
-                                    if (!activeFlow) return;
-                                    const newQuantity = parseInt(e.target.value) || 1;
-                                    const selectedProduct = activeFlow.selectedProducts.find(sp => sp.productId === content.productId);
-                                    const product = productsData.find(p => p.id === content.productId);
-                                    if (!selectedProduct || !product) return;
-                                    
-                                    // 実際の残り数量を計算
-                                    const actualAssigned = calculateActualAssignedQuantity(content.productId, activeFlow.cartons);
-                                    const actualRemaining = selectedProduct.requestedQuantity - actualAssigned;
-                                    
-                                    // 差分を計算（グループ内のすべての段ボール分）
-                                    const diffBags = (newQuantity - content.quantity) * group.count;
-                                    const diffSets = diffBags / product.bagsPerSet;
-                                    
-                                    // 残り数量をチェック
-                                    if (diffSets > actualRemaining) {
-                                      alert(`残り数量が不足しています（残り: ${actualRemaining}セット = ${actualRemaining * product.bagsPerSet}袋）`);
-                                      return;
-                                    }
-                                    
-                                    // グループ内のすべての段ボールの内容を更新（割当数量は自動計算される）
-                                    updateActiveFlow({
-                                      cartons: activeFlow.cartons.map(c =>
-                                        group.cartonIds.includes(c.id)
-                                          ? {
-                                              ...c,
-                                              contents: c.contents.map((cnt, i) =>
-                                                i === contentIndex ? { ...cnt, quantity: newQuantity } : cnt
-                                              )
-                                            }
-                                          : c
-                                      )
-                                    });
-                                  }}
-                                  className="w-20 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-                                />
-                                <span className="text-xs text-gray-500">袋</span>
-                                {product && (
-                                  <span className="text-xs text-indigo-600 font-medium">
-                                    ({(content.quantity / product.bagsPerSet).toFixed(2)}セット)
-                              </span>
-                                )}
-                                {group.count > 1 && (
-                                  <span className="text-xs text-blue-600 font-medium">
-                                    × {group.count}箱 = {content.quantity * group.count}袋 ({((content.quantity * group.count) / (product?.bagsPerSet || 1)).toFixed(2)}セット)
-                                </span>
-                              )}
-                            </div>
+                              
+                              {/* セット数と箱数の編集 */}
+                              <div className="grid grid-cols-2 gap-2 mb-2">
+                                <div>
+                                  <label className="text-xs text-gray-500 block mb-1">1箱あたり</label>
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="1"
+                                      value={Math.round(setsPerBox * 100) / 100}
+                                      onChange={(e) => {
+                                        const newSets = parseFloat(e.target.value) || 0;
+                                        handleChangeSetsPerBox(group.cartonIds, contentIndex, newSets, product);
+                                      }}
+                                      className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                    />
+                                    <span className="text-xs text-gray-600 font-medium">セット</span>
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-500 block mb-1">箱数</label>
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={group.count}
+                                      onChange={(e) => {
+                                        const newCount = parseInt(e.target.value) || 1;
+                                        handleChangeBoxCount(group.cartonIds, group.count, newCount);
+                                      }}
+                                      className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                    />
+                                    <span className="text-xs text-gray-600 font-medium">箱</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* 合計表示 */}
+                              <div className="bg-gray-50 rounded p-1.5 text-xs space-y-1">
+                                <div className="flex justify-between text-gray-700">
+                                  <span>この段ボール合計:</span>
+                                  <span className="font-semibold text-blue-700">
+                                    {Math.round(setsPerBox * 100) / 100} × {group.count}箱 = {Math.round(totalSetsInGroup * 100) / 100}セット
+                                  </span>
+                                </div>
+                                {/* 割当状況 */}
+                                <div className={`flex justify-between font-medium ${
+                                  diff === 0 ? 'text-green-600' : diff > 0 ? 'text-orange-600' : 'text-red-600'
+                                }`}>
+                                  <span>①との差分:</span>
+                                  <span>
+                                    {diff === 0 ? '✓ ぴったり' :
+                                     diff > 0 ? `${diff}セット不足` :
+                                     `${Math.abs(diff)}セット超過`}
+                                    （①: {totalRequested} / ②合計: {Math.round(totalAssigned * 100) / 100}）
+                                  </span>
+                                </div>
+                              </div>
+                              
                               {product?.setWeight && (
                                 <div className="text-xs text-gray-500 mt-1">
-                                  重量: {(parseFloat(product.setWeight.match(/[\d.]+/)?.[0] || '0') * content.quantity / product.bagsPerSet).toFixed(2)}kg
+                                  重量: {(parseFloat(product.setWeight.match(/[\d.]+/)?.[0] || '0') * totalSetsInGroup).toFixed(2)}kg
                                 </div>
-                            )}
+                              )}
                           </div>
                           );
                         })}
                   </div>
                     )}
                     
-                    {group.assignedToPallet && (
+                    {/* 別の段ボールで分割ボタン */}
+                    {group.contents.length > 0 && !group.assignedToPallet && (
+                      <button
+                        onClick={() => {
+                          if (!activeFlow) return;
+                          const content = group.contents[0];
+                          if (!content) return;
+                          const product = productsData.find(p => p.id === content.productId);
+                          if (!product) return;
+                          
+                          const newCarton = {
+                            id: `carton-${Date.now()}-split`,
+                            cartonCode: group.cartonCode,
+                            cartonName: group.cartonName,
+                            contents: [{ productId: content.productId, quantity: product.bagsPerSet }],
+                            currentWeight: 0,
+                            assignedToPallet: false,
+                            action: 'new' as CartonAction
+                          };
+                          updateActiveFlow({
+                            cartons: [...activeFlow.cartons, newCarton]
+                          });
+                        }}
+                        className="w-full mt-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100 text-xs font-medium transition-colors"
+                      >
+                        + 別の段ボールタイプで分割
+                      </button>
+                    )}
+                    
+                    {group.assignedToPallet ? (
                       <div className="mt-2 text-xs text-green-600">
                         ✓ パレットに配置済み
                       </div>
-                    )}
+                    ) : group.contents.length > 0 ? (
+                      <button
+                        onClick={() => handleTransferToPallet(group.cartonIds, group.count, group.cartonName)}
+                        className="w-full mt-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs font-medium transition-colors flex items-center justify-center gap-1"
+                      >
+                        <span>→③</span>
+                        <span>パレット積付に移動</span>
+                        <span className="text-purple-200">({group.count}箱)</span>
+                      </button>
+                    ) : null}
                   </div>
                 ))
               )}
@@ -2299,7 +2812,7 @@ export default function UnifiedPackingPage() {
               {/* ドロップヒント（段ボールが既にある場合） */}
               {(activeFlow?.cartons.length || 0) > 0 && (
                 <div className="text-center py-4 text-xs text-blue-600 border border-dashed border-blue-300 rounded-lg bg-blue-50 mx-2 mt-3">
-                  💡 商品をここにドロップして新しい段ボールを追加
+                  💡 左側の商品で「→② 段ボール設計に移動」をクリックして追加
                 </div>
               )}
             </div>
@@ -2327,7 +2840,7 @@ export default function UnifiedPackingPage() {
                 + 段ボールを追加
                               </button>
               <div className="text-xs text-gray-500 text-center">
-                左側の商品を選択して<br/>おすすめ段ボールまたは検索から追加
+                左側の商品の「→② 段ボール設計に移動」ボタンで追加
                       </div>
                     </div>
           </div>
@@ -2375,6 +2888,31 @@ export default function UnifiedPackingPage() {
                   />
                 </button>
                         </div>
+              
+              {/* ②→③ 割当状況サマリー */}
+              {activeFlow?.usePallets && activeFlow.cartons.length > 0 && (
+                <div className="mt-3 space-y-1">
+                  {(() => {
+                    const totalCartons = activeFlow.cartons.length;
+                    const assignedCartons = activeFlow.cartons.filter(c => c.assignedToPallet).length;
+                    const unassignedCartons = totalCartons - assignedCartons;
+                    return (
+                      <div className={`text-xs px-2 py-1.5 rounded flex justify-between ${
+                        unassignedCartons === 0 ? 'bg-green-50 text-green-700 border border-green-200' :
+                        'bg-orange-50 text-orange-700 border border-orange-200'
+                      }`}>
+                        <span>段ボール割当:</span>
+                        <span className="font-medium">
+                          {unassignedCartons === 0 
+                            ? `✓ 全${totalCartons}箱 割当完了`
+                            : `${assignedCartons}/${totalCartons}箱 割当済（残り${unassignedCartons}箱）`
+                          }
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
                   </div>
             
             {/* パレット使用の場合はパレットリスト */}
@@ -2409,8 +2947,15 @@ export default function UnifiedPackingPage() {
                       <button
                         onClick={() => {
                           if (!activeFlow) return;
+                          const cartonIdsOnPallet = new Set<string>();
+                          pallet.layers.forEach(l => l.cartons.forEach(cid => cartonIdsOnPallet.add(cid)));
                           updateActiveFlow({
-                            pallets: activeFlow.pallets.filter(p => p.id !== pallet.id)
+                            pallets: activeFlow.pallets.filter(p => p.id !== pallet.id),
+                            cartons: activeFlow.cartons.map(c =>
+                              cartonIdsOnPallet.has(c.id)
+                                ? { ...c, assignedToPallet: false, palletId: undefined }
+                                : c
+                            )
                           });
                         }}
                         className="text-xs text-red-600 hover:text-red-800"
@@ -2487,164 +3032,191 @@ export default function UnifiedPackingPage() {
                     {pallet.layers.length === 0 ? (
                       <div className="text-xs text-gray-400 py-8 border-2 border-dashed border-purple-200 rounded text-center bg-purple-50">
                         <div className="text-3xl mb-2">🏗️</div>
-                        <div>左側の段ボールをドラッグ&ドロップ</div>
+                        <div>②の段ボールで「→③ パレット積付に移動」をクリック</div>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {/* 商品ごとのサマリー */}
-                        <div className="bg-indigo-50 border border-indigo-200 rounded p-2">
-                          <div className="text-xs font-semibold text-indigo-900 mb-2">📊 商品別サマリー</div>
-                          <div className="space-y-1">
-                            {(() => {
-                              // このパレットの全段ボールから商品ごとの合計を計算
-                              const productSummary: { [productId: number]: { bags: number; boxes: number; cartonCode: string } } = {};
-                              pallet.layers.forEach(layer => {
-                                layer.cartons.forEach(cartonId => {
-                                  const carton = activeFlow?.cartons.find(c => c.id === cartonId);
-                                  if (carton) {
-                                    carton.contents.forEach(content => {
-                                      if (!productSummary[content.productId]) {
-                                        productSummary[content.productId] = { bags: 0, boxes: 0, cartonCode: carton.cartonCode };
-                                      }
-                                      productSummary[content.productId].bags += content.quantity;
-                                      productSummary[content.productId].boxes += 1;
+                        {/* パレット積載状態テーブル */}
+                        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                          <button
+                            onClick={() => setPalletTableExpanded(prev => ({ ...prev, [pallet.id]: !prev[pallet.id] }))}
+                            className="w-full flex items-center justify-between px-3 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 transition-colors"
+                          >
+                            <span className="text-xs font-semibold text-indigo-900">📊 積載状態テーブル</span>
+                            <span className="text-xs text-gray-500">{palletTableExpanded[pallet.id] ? '▲ 閉じる' : '▼ 開く'}</span>
+                          </button>
+                          
+                          {palletTableExpanded[pallet.id] && (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-xs">
+                                <thead>
+                                  <tr className="bg-gray-50 border-b border-gray-200">
+                                    <th className="px-2 py-1.5 text-left font-semibold text-gray-700 whitespace-nowrap">段</th>
+                                    <th className="px-2 py-1.5 text-left font-semibold text-gray-700 whitespace-nowrap">商品名</th>
+                                    <th className="px-2 py-1.5 text-right font-semibold text-gray-700 whitespace-nowrap">箱数</th>
+                                    <th className="px-2 py-1.5 text-right font-semibold text-gray-700 whitespace-nowrap">袋数</th>
+                                    <th className="px-2 py-1.5 text-center font-semibold text-gray-700 whitespace-nowrap">操作</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(() => {
+                                    const rows: Array<{ layerNumber: number; productId: number; productName: string; boxes: number; bags: number; cartonIds: string[] }> = [];
+                                    [...pallet.layers].sort((a, b) => a.layerNumber - b.layerNumber).forEach(layer => {
+                                      const layerProducts: { [pid: number]: { boxes: number; bags: number; cartonIds: string[]; productName: string } } = {};
+                                      layer.cartons.forEach(cartonId => {
+                                        const carton = activeFlow?.cartons.find(c => c.id === cartonId);
+                                        if (carton) {
+                                          carton.contents.forEach(content => {
+                                            if (!layerProducts[content.productId]) {
+                                              const product = productsData.find(p => p.id === content.productId);
+                                              layerProducts[content.productId] = {
+                                                boxes: 0, bags: 0, cartonIds: [],
+                                                productName: product?.productName || '不明'
+                                              };
+                                            }
+                                            layerProducts[content.productId].boxes += 1;
+                                            layerProducts[content.productId].bags += content.quantity;
+                                            layerProducts[content.productId].cartonIds.push(cartonId);
+                                          });
+                                        }
+                                      });
+                                      Object.entries(layerProducts).forEach(([pid, info]) => {
+                                        rows.push({
+                                          layerNumber: layer.layerNumber,
+                                          productId: parseInt(pid),
+                                          productName: info.productName,
+                                          boxes: info.boxes,
+                                          bags: info.bags,
+                                          cartonIds: info.cartonIds
+                                        });
+                                      });
                                     });
-                                  }
+                                    
+                                    if (rows.length === 0) {
+                                      return (
+                                        <tr>
+                                          <td colSpan={5} className="px-2 py-4 text-center text-gray-400">積載データなし</td>
+                                        </tr>
+                                      );
+                                    }
+                                    
+                                    return rows.map((row, ri) => (
+                                      <tr key={`${row.layerNumber}-${row.productId}-${ri}`} className="border-b border-gray-100 hover:bg-gray-50">
+                                        <td className="px-2 py-1.5 text-gray-700 font-medium whitespace-nowrap">{row.layerNumber}段</td>
+                                        <td className="px-2 py-1.5 text-gray-800 truncate max-w-[120px]" title={row.productName}>{row.productName}</td>
+                                        <td className="px-2 py-1.5 text-right text-gray-700 whitespace-nowrap">{row.boxes}箱</td>
+                                        <td className="px-2 py-1.5 text-right text-gray-700 whitespace-nowrap">{row.bags}袋</td>
+                                        <td className="px-2 py-1.5 text-center whitespace-nowrap">
+                                          {(activeFlow?.pallets.length || 0) > 1 && (
+                                            <button
+                                              onClick={() => {
+                                                setInterPalletMovePrompt({
+                                                  sourcePalletId: pallet.id,
+                                                  productId: row.productId,
+                                                  productName: row.productName,
+                                                  maxBoxes: row.boxes,
+                                                  cartonIds: row.cartonIds
+                                                });
+                                                setMoveBoxCount(1);
+                                                setMoveTargetPalletId(null);
+                                                setMoveTargetLayer(1);
+                                              }}
+                                              className="px-1.5 py-0.5 text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded transition-colors"
+                                            >
+                                              移動
+                                            </button>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    ));
+                                  })()}
+                                </tbody>
+                                <tfoot>
+                                  <tr className="bg-gray-50 border-t border-gray-300">
+                                    <td className="px-2 py-1.5 font-semibold text-gray-800" colSpan={2}>合計</td>
+                                    <td className="px-2 py-1.5 text-right font-semibold text-gray-800">
+                                      {pallet.layers.reduce((sum, l) => sum + l.cartons.length, 0)}箱
+                                    </td>
+                                    <td className="px-2 py-1.5 text-right font-semibold text-gray-800">
+                                      {(() => {
+                                        let totalBags = 0;
+                                        pallet.layers.forEach(layer => {
+                                          layer.cartons.forEach(cartonId => {
+                                            const carton = activeFlow?.cartons.find(c => c.id === cartonId);
+                                            if (carton) {
+                                              carton.contents.forEach(content => { totalBags += content.quantity; });
+                                            }
+                                          });
+                                        });
+                                        return totalBags;
+                                      })()}袋
+                                    </td>
+                                    <td></td>
+                                  </tr>
+                                </tfoot>
+                              </table>
+                            </div>
+                          )}
+                          
+                          {!palletTableExpanded[pallet.id] && (
+                            <div className="px-3 py-2 flex flex-wrap gap-2">
+                              {(() => {
+                                const productSummary: { [productId: number]: { bags: number; boxes: number } } = {};
+                                pallet.layers.forEach(layer => {
+                                  layer.cartons.forEach(cartonId => {
+                                    const carton = activeFlow?.cartons.find(c => c.id === cartonId);
+                                    if (carton) {
+                                      carton.contents.forEach(content => {
+                                        if (!productSummary[content.productId]) {
+                                          productSummary[content.productId] = { bags: 0, boxes: 0 };
+                                        }
+                                        productSummary[content.productId].bags += content.quantity;
+                                        productSummary[content.productId].boxes += 1;
+                                      });
+                                    }
+                                  });
                                 });
-                              });
-                              
-                              return Object.entries(productSummary).map(([productId, summary]) => {
-                                const product = productsData.find(p => p.id === parseInt(productId));
-                                const sets = summary.bags / (product?.bagsPerSet || 1);
-                                return (
-                                  <div key={productId} className="text-xs bg-white p-1.5 rounded border border-indigo-200">
-                                    <div className="flex justify-between items-start">
-                                      <div className="flex-1">
-                                        <div className="font-medium text-gray-800">{product?.productName}</div>
-                                        <div className="text-indigo-600 mt-0.5">
-                                          {summary.boxes}箱 × {summary.bags / summary.boxes}袋 = {summary.bags}袋 ({sets.toFixed(2)}セット)
-                                        </div>
-                                      </div>
-                        <button
-                          onClick={() => {
-                                          if (!activeFlow) return;
-                                          
-                                          // 移動先パレットを選択
-                                          const otherPallets = activeFlow.pallets.filter(p => p.id !== pallet.id);
-                                          if (otherPallets.length === 0) {
-                                            alert('移動先のパレットがありません。先にパレットを追加してください。');
-                                            return;
-                                          }
-                                          
-                                          const palletList = otherPallets.map((p, idx) => 
-                                            `${idx + 1}. パレット#${activeFlow.pallets.indexOf(p) + 1} (${p.size})`
-                                          ).join('\n');
-                                          
-                                          const palletSelection = prompt(`移動先のパレットを選択してください:\n\n${palletList}`);
-                                          if (!palletSelection) return;
-                                          
-                                          const palletIndex = parseInt(palletSelection) - 1;
-                                          if (palletIndex < 0 || palletIndex >= otherPallets.length) {
-                                            alert('無効な番号です');
-                                            return;
-                                          }
-                                          
-                                          const targetPallet = otherPallets[palletIndex];
-                                          
-                                          // 移動する箱数を入力
-                                          const boxCount = parseInt(prompt(`何箱移動しますか？（最大: ${summary.boxes}箱）`) || '0');
-                                          if (boxCount <= 0 || boxCount > summary.boxes) {
-                                            alert('無効な箱数です');
-                                            return;
-                                          }
-                                          
-                                          // この商品を含む段ボールを検索
-                                          const cartonsWithProduct: string[] = [];
-                                          pallet.layers.forEach(layer => {
-                                            layer.cartons.forEach(cartonId => {
-                                              const carton = activeFlow.cartons.find(c => c.id === cartonId);
-                                              if (carton && carton.contents.some(c => c.productId === parseInt(productId))) {
-                                                cartonsWithProduct.push(cartonId);
-                                              }
-                                            });
-                                          });
-                                          
-                                          // 指定された箱数だけ移動
-                                          const cartonsToMove = cartonsWithProduct.slice(0, boxCount);
-                                          
-                                          // 元のパレットから削除
-                                          const updatedSourcePallet = {
-                                            ...pallet,
-                                            layers: pallet.layers.map(layer => ({
-                                              ...layer,
-                                              cartons: layer.cartons.filter(id => !cartonsToMove.includes(id))
-                                            })).filter(layer => layer.cartons.length > 0)
-                                          };
-                                          
-                                          // 移動先パレットに追加
-                                          const updatedTargetPallet = {
-                                            ...targetPallet,
-                                            layers: targetPallet.layers.length === 0
-                                              ? [{ layerNumber: 1, cartons: cartonsToMove }]
-                                              : [...targetPallet.layers, { layerNumber: targetPallet.layers.length + 1, cartons: cartonsToMove }]
-                                          };
-                                          
-                                          // 段ボールのpalletIdを更新
-                                          updateActiveFlow({
-                                            pallets: activeFlow.pallets.map(p => {
-                                              if (p.id === pallet.id) return updatedSourcePallet;
-                                              if (p.id === targetPallet.id) return updatedTargetPallet;
-                                              return p;
-                                            }),
-                                            cartons: activeFlow.cartons.map(c =>
-                                              cartonsToMove.includes(c.id)
-                                                ? { ...c, palletId: targetPallet.id }
-                                                : c
-                                            )
-                                          });
-                                        }}
-                                        className="ml-2 px-2 py-0.5 text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded transition-colors"
-                                      >
-                                        移動
-                        </button>
-                    </div>
-                                  </div>
-                                );
-                              });
-                            })()}
-                          </div>
+                                return Object.entries(productSummary).map(([productId, summary]) => {
+                                  const product = productsData.find(p => p.id === parseInt(productId));
+                                  return (
+                                    <span key={productId} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-indigo-100 text-indigo-800">
+                                      {product?.productName}: {summary.boxes}箱
+                                    </span>
+                                  );
+                                });
+                              })()}
+                            </div>
+                          )}
                         </div>
                         
                         {/* 三次元パレット積載図（Three.js） */}
                         <div className="space-y-2">
                           <div className="text-xs font-semibold text-gray-700 mb-2">🏗️ パレット積載図（3D・編集可能）</div>
-                          {(() => {
-                            console.log('📦 Pallet data from page.tsx:', {
-                              palletId: pallet.id,
-                              layersCount: pallet.layers.length,
-                              layerNumbers: pallet.layers.map(l => l.layerNumber),
-                              cartonsPerLayer: pallet.layers.map(l => l.cartons.length)
-                            });
-                            return null;
-                          })()}
-                          <PalletViewer3D 
+                          <PalletViewer3D
+                            key={`pallet3d-${pallet.id}-${pallet.layers.length}-${pallet.layers.reduce((s, l) => s + l.cartons.length, 0)}`}
                             layers={pallet.layers.map(layer => ({
                               layerNumber: layer.layerNumber,
                               cartons: layer.cartons.map(cartonId => {
                                 const carton = activeFlow?.cartons.find(c => c.id === cartonId);
-                                const cartonDetail = carton ? allCartons.find(c => c.code === carton.cartonCode) : null;
-                                const productName = carton?.contents[0] ? 
+                                if (!carton) return null;
+                                const cartonDetail = allCartons.find(c => c.code === carton.cartonCode);
+                                const productName = carton.contents[0] ? 
                                   productsData.find(p => p.id === carton.contents[0].productId)?.productName || '' : '';
                                 
                                 return {
                                   id: cartonId,
-                                  length: cartonDetail?.innerLength || 500,
-                                  width: cartonDetail?.innerWidth || 300,
-                                  height: cartonDetail?.innerHeight || 200,
-                                  productName: productName
+                                  length: cartonDetail?.innerLength || 300,
+                                  width: cartonDetail?.innerWidth || 200,
+                                  height: cartonDetail?.innerHeight || 150,
+                                  productName: productName,
+                                  palletConfig: cartonDetail?.palletConfig || (cartonDetail?.palletLoadingDetails ? {
+                                    boxesPerLayer: cartonDetail.palletLoadingDetails.cartonsPerLayer,
+                                    layers: cartonDetail.palletLoadingDetails.totalLayers,
+                                    total: cartonDetail.palletLoadingDetails.totalCartons
+                                  } : undefined)
                                 };
-                              })
-                            }))}
+                              }).filter((c): c is NonNullable<typeof c> => c !== null)
+                            })).filter(layer => layer.cartons.length > 0)}
                             palletSize={1100}
                             editable={true}
                             onLayoutChange={(newLayers) => {
@@ -2652,206 +3224,7 @@ export default function UnifiedPackingPage() {
                               console.log('Layout changed:', newLayers);
                             }}
                           />
-                          <div className="bg-gradient-to-b from-gray-700 to-gray-900 border-2 border-gray-800 rounded-lg p-4 relative" style={{ minHeight: '0px', display: 'none' }}>
-                            {/* 奥行き感を出すための背景グリッド */}
-                            <div className="absolute inset-0 opacity-10 rounded-lg" style={{
-                              backgroundImage: 'linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent)',
-                              backgroundSize: '20px 20px'
-                            }}></div>
-                            
-                            <div className="relative">
-                              {/* パレットサイズ: 1100mm × 1100mm */}
-                              {/* 表示サイズ: 280px × 280px（1/4スケール） */}
-                              <div className="relative mx-auto" style={{ width: '280px', height: '350px', perspective: '1000px' }}>
-                                {/* 上から下に表示（上が最上段）- 3D効果付き */}
-                                <div className="relative w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
-                                  {pallet.layers.sort((a, b) => b.layerNumber - a.layerNumber).map((layer, layerIndex) => {
-                                    const firstCartonId = layer.cartons[0];
-                                    const firstCarton = activeFlow?.cartons.find(c => c.id === firstCartonId);
-                                    const cartonDetail = firstCarton ? allCartons.find(c => c.code === firstCarton.cartonCode) : null;
-                                    
-                                    if (!cartonDetail) return null;
-                                    
-                                    const boxCount = layer.cartons.length;
-                                    // パレットサイズ 1100mm × 1100mm
-                                    const palletSize = 1100;
-                                    const displayScale = 280 / palletSize; // 280px / 1100mm
-                                    
-                                    // 段ボールの実際のサイズ（mm）
-                                    const cartonLength = cartonDetail.innerLength; // 長さ
-                                    const cartonWidth = cartonDetail.innerWidth;   // 幅
-                                    const cartonHeight = cartonDetail.innerHeight; // 高さ
-                                    
-                                    // 表示サイズに変換（px）
-                                    const displayLength = cartonLength * displayScale;
-                                    const displayWidth = cartonWidth * displayScale;
-                                    const displayHeight = cartonHeight * displayScale;
-                                    
-                                    // パレット積載詳細がある場合、その配置を使用
-                                    let cartonPositions: { x: number; y: number; }[] = [];
-                                    
-                                    if (cartonDetail.palletLoadingDetails) {
-                                      const perLayer = cartonDetail.palletLoadingDetails.cartonsPerLayer;
-                                      // 実際の配置を計算（例：3×4配置、4×4配置など）
-                                      const cols = Math.ceil(Math.sqrt(perLayer));
-                                      const rows = Math.ceil(perLayer / cols);
-                                      
-                                      for (let i = 0; i < Math.min(boxCount, perLayer); i++) {
-                                        const col = i % cols;
-                                        const row = Math.floor(i / cols);
-                                        cartonPositions.push({
-                                          x: col * displayLength + (280 - cols * displayLength) / 2,
-                                          y: row * displayWidth + (280 - rows * displayWidth) / 2
-                                        });
-                                      }
-                                    } else {
-                                      // デフォルト配置
-                                      const cols = Math.floor(280 / displayLength);
-                                      for (let i = 0; i < boxCount; i++) {
-                                        const col = i % cols;
-                                        const row = Math.floor(i / cols);
-                                        cartonPositions.push({
-                                          x: col * displayLength,
-                                          y: row * displayWidth
-                                        });
-                                      }
-                                    }
-                                    
-                                    // 段の高さによるZ位置（下から積み上げ）
-                                    const totalLayers = pallet.layers.length;
-                                    const zPosition = layerIndex * 15; // 各段15pxの高さ
-                                    
-                                    return (
-                                      <div
-                                        key={layer.layerNumber}
-                                        className="absolute"
-                                        style={{
-                                          bottom: `${zPosition}px`,
-                                          left: '0',
-                                          width: '280px',
-                                          height: '280px',
-                                          transform: `rotateX(60deg) translateZ(${zPosition}px)`,
-                                          transformStyle: 'preserve-3d'
-                                        }}
-                                      >
-                                        {/* 段番号ラベル */}
-                                        <div 
-                                          className="absolute -top-6 left-0 text-xs text-yellow-300 font-bold bg-black bg-opacity-50 px-2 py-1 rounded"
-                                          style={{ transform: 'rotateX(-60deg)' }}
-                                        >
-                                          {layer.layerNumber}段目 ({boxCount}箱)
-                  </div>
-                                        
-                                        {/* 段ボール配置 */}
-                                        {cartonPositions.map((pos, idx) => {
-                                          if (idx >= layer.cartons.length) return null;
-                                          const cartonId = layer.cartons[idx];
-                                          const carton = activeFlow?.cartons.find(c => c.id === cartonId);
-                                          const productName = carton?.contents[0] ? 
-                                            productsData.find(p => p.id === carton.contents[0].productId)?.productName.split('×')[0].slice(0, 5) : '';
-                                          
-                                          return (
-                                            <div
-                                              key={cartonId}
-                                              className="absolute group"
-                                              style={{
-                                                left: `${pos.x}px`,
-                                                top: `${pos.y}px`,
-                                                width: `${displayLength}px`,
-                                                height: `${displayWidth}px`,
-                                                transformStyle: 'preserve-3d'
-                                              }}
-                                            >
-                                              {/* 段ボール上面 */}
-                                              <div
-                                                className="absolute inset-0 rounded transition-all duration-150 cursor-pointer"
-                                                style={{
-                                                  background: 'linear-gradient(135deg, #d4a574 0%, #c89660 50%, #b8864f 100%)',
-                                                  boxShadow: '0 2px 4px rgba(0,0,0,0.5), inset -1px -1px 2px rgba(0,0,0,0.3), inset 1px 1px 2px rgba(255,255,255,0.3)',
-                                                  border: '1px solid #8b6f47'
-                                                }}
-                                                title={`${productName}\n${cartonLength}×${cartonWidth}×${cartonHeight}mm`}
-                                              >
-                                                {/* 段ボールの折り目 */}
-                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                  <div className="w-full h-full relative">
-                                                    <div className="absolute top-1/2 left-0 right-0 h-px bg-black bg-opacity-20"></div>
-                                                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-black bg-opacity-20"></div>
-                                                    <div className="absolute inset-0 flex items-center justify-center text-xs opacity-70 group-hover:opacity-100">
-                                                      📦
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                              </div>
-                                              
-                                              {/* 段ボール側面（奥行き感） */}
-                                              <div
-                                                className="absolute top-0 left-0 w-full"
-                                                style={{
-                                                  height: '3px',
-                                                  background: 'linear-gradient(to bottom, #9a7a5a 0%, #7a5a3a 100%)',
-                                                  transform: 'rotateX(90deg) translateZ(-1.5px)',
-                                                  transformOrigin: 'top'
-                                                }}
-                                              ></div>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                                
-                                {/* パレット台座 */}
-                                <div 
-                                  className="absolute bottom-0 left-0 rounded-lg overflow-hidden"
-                                  style={{
-                                    width: '280px',
-                                    height: '280px',
-                                    transform: 'rotateX(60deg)',
-                                    transformStyle: 'preserve-3d'
-                                  }}
-                                >
-                                  <div
-                                    style={{
-                                      width: '100%',
-                                      height: '100%',
-                                      background: 'linear-gradient(135deg, #8b7355 0%, #6b5a45 50%, #4a3f2f 100%)',
-                                      boxShadow: '0 8px 16px rgba(0,0,0,0.6), inset 0 -2px 4px rgba(0,0,0,0.3)',
-                                      border: '3px solid #5a4a35',
-                                      position: 'relative'
-                                    }}
-                                  >
-                                    {/* 木目調パターン */}
-                                    <div className="absolute inset-0 opacity-30" style={{
-                                      backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(0,0,0,0.1) 20px, rgba(0,0,0,0.1) 22px)',
-                                      backgroundSize: '20px 100%'
-                                    }}></div>
-                                    
-                                    {/* パレットのスラット（板） */}
-                                    {[0, 1, 2, 3].map(i => (
-                                      <div
-                                        key={i}
-                                        className="absolute h-1 bg-black bg-opacity-20"
-                                        style={{
-                                          left: '0',
-                                          right: '0',
-                                          top: `${i * 25}%`
-                                        }}
-                                      ></div>
-                                    ))}
-                                  </div>
-              </div>
-              
-                                {/* 寸法表示 */}
-                                <div className="absolute -bottom-10 left-0 right-0 text-center">
-                                  <span className="text-xs text-yellow-200 font-bold bg-black bg-opacity-50 px-3 py-1 rounded">
-                                    パレット: 1100mm × 1100mm
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+                          {/* 旧2Dビュー削除済み - 3Dビューアーを使用 */}
                         </div>
                       </div>
                     )}
@@ -2872,6 +3245,213 @@ export default function UnifiedPackingPage() {
           </div>
         </div>
       </main>
+
+      {/* パレット選択モーダル */}
+      {palletSelectPrompt && activeFlow && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              パレットを選択
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              <span className="font-medium text-purple-700">{palletSelectPrompt.groupName}</span>
+              （{palletSelectPrompt.groupCount}箱）をどのパレットに積みますか？
+            </p>
+            
+            <div className="space-y-2 mb-4">
+              {activeFlow.pallets.map((pallet, index) => {
+                const totalCartonsOnPallet = pallet.layers.reduce((sum, l) => sum + l.cartons.length, 0);
+                return (
+                  <button
+                    key={pallet.id}
+                    onClick={() => executeTransferToPallet(palletSelectPrompt.groupCartonIds, pallet.id)}
+                    className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="font-medium text-gray-900">パレット#{index + 1}</span>
+                        <span className="text-xs text-gray-500 ml-2">({pallet.size}mm)</span>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {totalCartonsOnPallet > 0 ? `${totalCartonsOnPallet}箱積載中` : '空'}
+                      </span>
+                    </div>
+                    {totalCartonsOnPallet > 0 && (
+                      <div className="mt-1 text-xs text-gray-400">
+                        {pallet.layers.length}段
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+              
+              {/* 新規パレット作成ボタン */}
+              <button
+                onClick={() => executeTransferToPallet(palletSelectPrompt.groupCartonIds, null)}
+                className="w-full text-left px-4 py-3 border-2 border-dashed border-purple-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-purple-600 font-bold text-lg">+</span>
+                  <span className="font-medium text-purple-700">新しいパレットを作成</span>
+                </div>
+              </button>
+            </div>
+            
+            <button
+              onClick={() => setPalletSelectPrompt(null)}
+              className="w-full px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              キャンセル
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* パレット間移動モーダル */}
+      {interPalletMovePrompt && activeFlow && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4 shadow-2xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              段ボールをパレット間で移動
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              パレット#{activeFlow.pallets.findIndex(p => p.id === interPalletMovePrompt.sourcePalletId) + 1} から移動
+            </p>
+            
+            {/* 商品情報 */}
+            <div className="bg-indigo-50 rounded-lg p-3 mb-4">
+              <div className="text-sm font-medium text-indigo-900">{interPalletMovePrompt.productName}</div>
+              <div className="text-xs text-indigo-600 mt-1">最大 {interPalletMovePrompt.maxBoxes}箱 移動可能</div>
+            </div>
+            
+            {/* 移動箱数 */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">移動する箱数</label>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setMoveBoxCount(Math.max(1, moveBoxCount - 1))}
+                  className="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 text-gray-600"
+                >−</button>
+                <input
+                  type="number"
+                  min={1}
+                  max={interPalletMovePrompt.maxBoxes}
+                  value={moveBoxCount}
+                  onChange={(e) => setMoveBoxCount(Math.max(1, Math.min(interPalletMovePrompt.maxBoxes, parseInt(e.target.value) || 1)))}
+                  className="w-20 text-center px-2 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+                <button
+                  onClick={() => setMoveBoxCount(Math.min(interPalletMovePrompt.maxBoxes, moveBoxCount + 1))}
+                  className="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 text-gray-600"
+                >+</button>
+                <span className="text-xs text-gray-500">/ {interPalletMovePrompt.maxBoxes}箱</span>
+              </div>
+            </div>
+            
+            {/* 移動先パレット選択 */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">移動先パレット</label>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {activeFlow.pallets.filter(p => p.id !== interPalletMovePrompt.sourcePalletId).map((p, idx) => {
+                  const palletIndex = activeFlow.pallets.indexOf(p);
+                  const totalBoxes = p.layers.reduce((sum, l) => sum + l.cartons.length, 0);
+                  const isSelected = moveTargetPalletId === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        setMoveTargetPalletId(p.id);
+                        setMoveTargetLayer(p.layers.length > 0 ? Math.max(...p.layers.map(l => l.layerNumber)) + 1 : 1);
+                      }}
+                      className={`w-full text-left px-3 py-2 border rounded-lg transition-colors ${
+                        isSelected
+                          ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200'
+                          : 'border-gray-200 hover:border-indigo-300 hover:bg-indigo-50'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-sm text-gray-900">パレット#{palletIndex + 1}</span>
+                        <span className="text-xs text-gray-500">{totalBoxes > 0 ? `${totalBoxes}箱 / ${p.layers.length}段` : '空'}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            
+            {/* 移動先の段の選択 */}
+            {moveTargetPalletId && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">移動先の段</label>
+                {(() => {
+                  const targetPallet = activeFlow.pallets.find(p => p.id === moveTargetPalletId);
+                  if (!targetPallet) return null;
+                  const existingLayers = [...targetPallet.layers].sort((a, b) => a.layerNumber - b.layerNumber);
+                  const nextLayerNum = existingLayers.length > 0 ? Math.max(...existingLayers.map(l => l.layerNumber)) + 1 : 1;
+                  
+                  return (
+                    <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                      {existingLayers.map(layer => {
+                        const isSelected = moveTargetLayer === layer.layerNumber;
+                        return (
+                          <button
+                            key={layer.layerNumber}
+                            onClick={() => setMoveTargetLayer(layer.layerNumber)}
+                            className={`w-full text-left px-3 py-1.5 border rounded transition-colors text-sm ${
+                              isSelected
+                                ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-200'
+                                : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            <span className="font-medium">{layer.layerNumber}段目</span>
+                            <span className="text-xs text-gray-500 ml-2">（{layer.cartons.length}箱積載中）</span>
+                          </button>
+                        );
+                      })}
+                      <button
+                        onClick={() => setMoveTargetLayer(nextLayerNum)}
+                        className={`w-full text-left px-3 py-1.5 border-2 border-dashed rounded transition-colors text-sm ${
+                          moveTargetLayer === nextLayerNum
+                            ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-200'
+                            : 'border-gray-300 hover:border-indigo-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="text-indigo-600 font-medium">+ 新しい段（{nextLayerNum}段目）</span>
+                      </button>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+            
+            {/* ボタン */}
+            <div className="flex gap-2 justify-end pt-2 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setInterPalletMovePrompt(null);
+                  setMoveBoxCount(1);
+                  setMoveTargetPalletId(null);
+                  setMoveTargetLayer(1);
+                }}
+                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={executeInterPalletMove}
+                disabled={!moveTargetPalletId}
+                className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                  moveTargetPalletId
+                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                {moveBoxCount}箱を移動
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 商品→段ボール 数量入力モーダル */}
       {dropQuantityPrompt && (

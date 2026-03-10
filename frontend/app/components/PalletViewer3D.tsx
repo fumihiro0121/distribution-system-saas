@@ -30,6 +30,11 @@ interface Carton {
   width: number;  // mm
   height: number; // mm
   productName: string;
+  palletConfig?: {
+    boxesPerLayer: number;
+    layers: number;
+    total: number;
+  };
 }
 
 interface Layer {
@@ -54,8 +59,8 @@ interface CartonPlacement {
   layerNumber: number;
   cartonIndex: number;
   // X-Y-Z 番号（原点=1-1-1は正面左手前）
-  gridX?: number; // X軸番号（手前から奥へ：1,2,3...）
-  gridY?: number; // Y軸番号（左から右へ：1,2,3...）
+  gridX?: number; // X軸番号（左から右へ：1,2,3...）
+  gridY?: number; // Y軸番号（手前から奥へ：1,2,3...）
   gridZ?: number; // Z軸番号（下から上へ：1,2,3...）
 }
 
@@ -156,9 +161,9 @@ function PalletBase({ size }: { size: number }) {
   const scaleFactor = size / 1000; // スケール調整
   const halfSize = scaleFactor * 1.1 / 2; // パレットの半分のサイズ
   
-  // 正面左手前を原点にするための調整
+  // 正面左手前を原点にするための調整（奥行きは-Z方向）
   return (
-    <group position={[halfSize, -0.05, halfSize]}>
+    <group position={[halfSize, -0.05, -halfSize]}>
       {/* パレット本体 */}
       <mesh receiveShadow>
         <boxGeometry args={[scaleFactor * 1.1, 0.1, scaleFactor * 1.1]} />
@@ -198,12 +203,7 @@ export default function PalletViewer3D({
   
   // layersを常に正しい順序にソート（1が一番下）
   const sortedInputLayers = useMemo(() => {
-    const sorted = [...layers].sort((a, b) => a.layerNumber - b.layerNumber);
-    console.log('🔄 Sorting input layers:', {
-      original: layers.map(l => l.layerNumber),
-      sorted: sorted.map(l => l.layerNumber)
-    });
-    return sorted;
+    return [...layers].sort((a, b) => a.layerNumber - b.layerNumber);
   }, [layers]);
   
   // 編集モード用の状態
@@ -285,299 +285,263 @@ export default function PalletViewer3D({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleUndo, handleRedo]);
   
-  // 段ボールの配置を計算（パレットサイズに最適化）
+  // palletConfig対応の汎用レイアウト計算: N個の段ボールをパレットに最適配置
+  const calculateOptimalGrid = useCallback((numCartons: number, rawL: number, rawW: number, ps: number) => {
+    // 方法1: 単一方向グリッド（回転なし）
+    const colsA = Math.max(1, Math.floor(ps / rawL));
+    const rowsA = Math.max(1, Math.floor(ps / rawW));
+    const capA = colsA * rowsA;
+
+    // 方法2: 単一方向グリッド（90度回転）
+    const colsB = Math.max(1, Math.floor(ps / rawW));
+    const rowsB = Math.max(1, Math.floor(ps / rawL));
+    const capB = colsB * rowsB;
+
+    if (capA >= numCartons || capB >= numCartons) {
+      // 単一グリッドで収まる
+      if (capA >= numCartons && (capA <= capB || capB < numCartons)) {
+        return { type: 'grid' as const, cols: colsA, rotated: false };
+      } else {
+        return { type: 'grid' as const, cols: colsB, rotated: true };
+      }
+    }
+
+    // 方法3: 混合配置（メインブロック + サイドブロック）
+    // 異なる向きのブロックを組み合わせてN個を収める
+    let bestMixed: { mainCols: number; mainRows: number; mainRotated: boolean;
+      sideCols: number; sideCount: number; mainDepthMm: number } | null = null;
+    let bestWaste = Infinity;
+
+    for (const mainRotated of [false, true]) {
+      const mL = mainRotated ? rawW : rawL;
+      const mW = mainRotated ? rawL : rawW;
+      const sL = mainRotated ? rawL : rawW;
+      const sW = mainRotated ? rawW : rawL;
+
+      const maxMainCols = Math.floor(ps / mL);
+      const maxMainRows = Math.floor(ps / mW);
+
+      for (let mc = maxMainCols; mc >= 1; mc--) {
+        for (let mr = maxMainRows; mr >= 1; mr--) {
+          const mainCount = mc * mr;
+          const remaining = numCartons - mainCount;
+          if (remaining <= 0) continue;
+
+          const mainDepthMm = mr * mW;
+          const remainingDepthMm = ps - mainDepthMm;
+
+          if (remainingDepthMm >= sW) {
+            const maxSideCols = Math.floor(ps / sL);
+            if (maxSideCols >= remaining) {
+              const waste = (ps - mc * mL) + (ps - maxSideCols * sL) + (remainingDepthMm - sW);
+              if (waste < bestWaste) {
+                bestWaste = waste;
+                bestMixed = { mainCols: mc, mainRows: mr, mainRotated,
+                  sideCols: maxSideCols, sideCount: remaining, mainDepthMm };
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (bestMixed) {
+      return { type: 'mixed' as const, ...bestMixed };
+    }
+
+    // フォールバック: 最大容量のグリッド
+    return { type: 'grid' as const, cols: capA >= capB ? colsA : colsB, rotated: capA >= capB ? false : true };
+  }, []);
+
+  // 段ボールの配置を計算（palletConfig対応版）
   const cartonPositions = useMemo(() => {
     const positions: Array<CartonPlacement> = [];
     
-    let currentHeight = 0.05; // パレットの上から開始
-    const palletSizeUnits = palletSize * scale; // パレットサイズ（units）
+    let currentHeight = 0.05;
     
-    // ソート済みのlayersを使用（1が一番下、数字が大きいほど上）
     const sortedLayers = sortedInputLayers;
-    
-    console.log('🔧 Layer sorting in PalletViewer3D:', {
-      receivedLayers: sortedInputLayers.map(l => ({ layerNumber: l.layerNumber, cartonCount: l.cartons.length })),
-      sortedLayers: sortedLayers.map(l => ({ layerNumber: l.layerNumber, cartonCount: l.cartons.length }))
-    });
     
     sortedLayers.forEach((layer) => {
       if (layer.cartons.length === 0) return;
       
-      // layerNumberをそのまま使用（変換不要）
       const layerNumber = layer.layerNumber;
-      
-      console.log(`📊 Processing layer: layerNumber=${layerNumber}, cartonCount=${layer.cartons.length}`);
-      
-      // 最適な配置パターンを計算
       const carton = layer.cartons[0];
-      const cartonLength = carton.length * scale;  // 長辺（例: 341mm）
-      const cartonWidth = carton.width * scale;    // 短辺（例: 226mm）
-      const cartonHeight = carton.height * scale;  // 高さ（例: 109mm）
-      
-      // 13箱の「13回し」パターン
-      let layoutPattern: Array<{
-        x: number;
-        z: number;
-        rotated: boolean;
-        gridX?: number;
-        gridY?: number;
-        gridZ?: number;
-      }> = [];
-      
-      // 13回しパターンを適用する商品名のキーワード
-      const pattern13Keywords = [
-        '黒ゴマアーモンドきな粉',
-        'きな粉150g×20袋'
-      ];
-      
+      const cartonLength = carton.length * scale;
+      const cartonWidth = carton.width * scale;
+      const cartonHeight = carton.height * scale;
       const productName = carton.productName || '';
       const isKinako20 = productName.includes('きな粉150g×20袋セット');
       
-      // 13回しパターンの判定
-      const matchesProduct = pattern13Keywords.some(keyword => 
-        productName.toLowerCase().includes(keyword.toLowerCase())
-      );
-      const use13Pattern = layer.cartons.length === 13 && matchesProduct;
+      let layoutPattern: Array<{
+        x: number; z: number; rotated: boolean;
+        gridX?: number; gridY?: number; gridZ?: number;
+      }> = [];
+
+      // きな粉20袋セット: 2段ペアの隙間に1箱縦置き
+      // レイヤー構造: [13箱横, 13箱横, 1箱縦] × 5ペア
+      const useVertical1Pattern = isKinako20 && layer.cartons.length === 1;
       
-      // きな粉20袋セットの縦置き5箱パターン
-      const useVertical5Pattern = isKinako20 && layer.cartons.length === 5;
-      
-      // デバッグログ
-      console.log('🔍 PalletViewer3D Debug:', {
-        layerNumber: layerNumber,
-        cartonsLength: layer.cartons.length,
-        productName: productName,
-        isKinako20: isKinako20,
-        matchesProduct: matchesProduct,
-        use13Pattern: use13Pattern,
-        useVertical5Pattern: useVertical5Pattern
-      });
-      
-      if (useVertical5Pattern) {
-        // 【縦置き5箱パターン】きな粉150g×20袋セット専用
-        // 3段目と4段目、7段目と8段目の間のスペースに配置
-        // 段ボールを横倒しにして縦置き: 125mm × 354mm × 225mm（高さ）
-        // 5箱を横一列に並べる
+      if (useVertical1Pattern) {
+        const rawW = carton.width;   // 225mm
+        const rawL = carton.length;  // 354mm
+        const rawH = carton.height;  // 125mm
         
-        for (let col = 0; col < 5; col++) {
-          layoutPattern.push({
-            x: col * cartonHeight,  // 125mm × 列（元の高さを横幅として使用）
-            z: 0,                    // パレット中央
-            rotated: false           // 縦置き用の特別な処理
-          });
-        }
-      } else if (use13Pattern) {
-        // 【13回し（変形ブロック積み）パターン】
-        // きな粉150g×20袋セット: 奇数段と偶数段で前後を入れ替える
+        // この縦置き箱のペアインデックス (0,1,2,3,4)
+        // レイヤー構造: [H,H,V, H,H,V, ...] → layerNumber 3,6,9,12,15 が縦置き
+        const pairIndex = Math.floor((layerNumber - 1) / 3);
+        const useBPattern = pairIndex % 2 === 1;
         
-        const isEvenLayer = layerNumber % 2 === 0;
+        // 縦置き: footprint=354mm×125mm, 高さ=225mm (2段分250mmに収まる)
+        const boxWidthX = rawH * scale;  // 125mm (Three.js X = パレット幅方向)
+        const boxDepthZ = rawL * scale;  // 354mm (Three.js Z = パレット奥行方向)
+        const boxHeightY = rawW * scale; // 225mm (Three.js Y = 高さ方向)
         
+        // 13箱mixedパターンの隙間位置:
+        // Aパターン: 9箱ブロック(奥行675mm) + 4箱ブロック(幅900mm) → 隙間は奥行675mm~, 幅900mm~
+        // Bパターン: 4箱ブロック(奥行0~354mm, 幅900mm) + 9箱ブロック → 隙間は奥行0~354mm, 幅900mm~
+        const gapWidthPos = (4 * rawW) * scale; // 4×225=900mm (幅方向はA/B共通)
+        const gapDepthPos = useBPattern ? 0 : (3 * rawW) * scale; // Bは手前(0), Aは奥(675mm)
+        
+        // 前の2段の高さ位置に配置（currentHeightを巻き戻す）
+        const twoLayerHeight = 2 * cartonHeight;
+        const verticalBaseHeight = currentHeight - twoLayerHeight;
+        
+        positions.push({
+          carton,
+          position: [
+            gapWidthPos + boxWidthX / 2,
+            verticalBaseHeight + boxHeightY / 2,
+            -(gapDepthPos + boxDepthZ / 2)
+          ],
+          size: [boxWidthX, boxHeightY, boxDepthZ],
+          rotation: 0,
+          isVertical: true,
+          layerNumber, cartonIndex: 0,
+          gridX: 5, gridY: 4, gridZ: layerNumber
+        });
+        
+        // 縦置きは2段の隙間に収まるので高さを追加しない
+        return;
+      } else {
+        // palletConfigまたは汎用アルゴリズムで配置を計算
+        const numCartons = layer.cartons.length;
+        const rawL = carton.length;
+        const rawW = carton.width;
+        const hasPalletConfig = carton.palletConfig && numCartons === carton.palletConfig.boxesPerLayer;
+        
+        const gridResult = calculateOptimalGrid(numCartons, rawL, rawW, palletSize);
+        
+        // A/Bパターン交互（安定性のため2段ごとに前後入替）
+        let useBPattern: boolean;
         if (isKinako20) {
-          // きな粉150g×20袋セット専用: 段ごとに配置を変える
-          // Aパターン（1,2,5,6,9,10段目）: 手前9箱+奥4箱
-          // Bパターン（3,4,7,8段目）: 手前4箱+奥9箱
-          
-          // 段番号に基づいてパターンを決定
-          // 1,2段目: A, 3,4段目: B, 5,6段目: A, 7,8段目: B, 9,10段目: A
+          // きな粉20袋: [H,H,V]×5構造 → ペア単位でA/B交互
+          const pairIndex = Math.floor((layerNumber - 1) / 3);
+          useBPattern = pairIndex % 2 === 1;
+        } else {
           const layerMod = ((layerNumber - 1) % 4);
-          const useBPattern = (layerMod === 2 || layerMod === 3);
-          
+          useBPattern = (layerMod === 2 || layerMod === 3);
+        }
+        
+        if (gridResult.type === 'mixed') {
+          const { mainCols, mainRows, mainRotated, sideCount, mainDepthMm } = gridResult;
+          const mL = (mainRotated ? cartonWidth : cartonLength);
+          const mW = (mainRotated ? cartonLength : cartonWidth);
+          const sL = (mainRotated ? cartonLength : cartonWidth);
+          const sW = (mainRotated ? cartonWidth : cartonLength);
+
           if (useBPattern) {
-            // Bパターン: 手前4箱（縦向き）+ 奥9箱（横置き）
-            // 【手前側ブロック】4箱: 縦向き 4列×1行
-            for (let col = 0; col < 4; col++) {
+            // Bパターン: サイドブロック（手前）→ メインブロック（奥）
+            for (let col = 0; col < sideCount; col++) {
               layoutPattern.push({
-                x: col * cartonWidth,   // 短辺 × 列（225mm）
-                z: 0,                    // 手前
-                rotated: true            // 90度回転
+                x: 0, z: col * sL,
+                rotated: !mainRotated,
+                gridX: col + 1, gridY: 1, gridZ: layerNumber
               });
             }
-            
-            // 【奥側ブロック】9箱: 横向き 3列×3行
-            const backRowZ = cartonLength; // 4箱ブロックの奥行き（354mm）
-            for (let row = 0; row < 3; row++) {
-              for (let col = 0; col < 3; col++) {
+            const sideDepth = sW;
+            for (let row = 0; row < mainRows; row++) {
+              for (let col = 0; col < mainCols; col++) {
                 layoutPattern.push({
-                  x: col * cartonLength,  // 長辺 × 列（354mm）
-                  z: backRowZ + row * cartonWidth,  // 奥行き
-                  rotated: false
+                  x: sideDepth + row * mW, z: col * mL,
+                  rotated: mainRotated,
+                  gridX: col + 1, gridY: row + 2, gridZ: layerNumber
                 });
               }
             }
           } else {
-            // Aパターン: 手前9箱（横置き）+ 奥4箱（縦向き）
-            // 【手前側ブロック】9箱: 横向き 3列×3行
-            for (let row = 0; row < 3; row++) {
-              for (let col = 0; col < 3; col++) {
+            // Aパターン: メインブロック（手前）→ サイドブロック（奥）
+            for (let row = 0; row < mainRows; row++) {
+              for (let col = 0; col < mainCols; col++) {
                 layoutPattern.push({
-                  x: col * cartonLength,  // 長辺 × 列（354mm）
-                  z: row * cartonWidth,   // 短辺 × 行（225mm）
-                  rotated: false
+                  x: row * mW, z: col * mL,
+                  rotated: mainRotated,
+                  gridX: col + 1, gridY: row + 1, gridZ: layerNumber
                 });
               }
             }
-            
-            // 【奥側ブロック】4箱: 縦向き 4列×1行
-            const backRowZ = 3 * cartonWidth; // 9箱ブロックの奥行き（675mm）
-            for (let col = 0; col < 4; col++) {
+            const mainDepth = mainRows * mW;
+            for (let col = 0; col < sideCount; col++) {
               layoutPattern.push({
-                x: col * cartonWidth,   // 短辺 × 列（225mm）
-                z: backRowZ,            // 奥側に配置
-                rotated: true           // 90度回転
+                x: mainDepth, z: col * sL,
+                rotated: !mainRotated,
+                gridX: col + 1, gridY: mainRows + 1, gridZ: layerNumber
               });
             }
           }
         } else {
-          // 黒ゴマアーモンドきな粉: 通常の13回しパターン（全段同じ）
-          // 【手前側ブロック】9箱: 横向き 3列×3行
-          // 段番号を計算（1,2,5,6,9,10段目はAパターン、3,4,7,8段目はBパターン）
-          const layerMod = ((layerNumber - 1) % 4);
-          const useBPattern = (layerMod === 2 || layerMod === 3);
-          
-          if (useBPattern) {
-            // 3,4,7,8段目: Bパターン（手前4箱縦+奥9箱横）
-            // 【手前側】4箱: 縦向き（X軸: 1, Y軸: 1-4）
-            for (let col = 0; col < 4; col++) {
-              layoutPattern.push({
-                x: 0,                    // 手前（X軸方向）
-                z: col * cartonWidth,   // 短辺 × 列（Y軸方向、左右）
-                rotated: true,           // 90度回転
-                gridX: 1,                // X: 1（手前）
-                gridY: col + 1,          // Y: 1,2,3,4（左から右へ）
-                gridZ: layerNumber       // Z: 段番号
-              });
-            }
-            
-            // 【奥側】9箱: 横向き（X軸: 2-4, Y軸: 1-3）
-            const backRowX = cartonLength; // 4箱ブロックの奥行き（X軸方向）
-            for (let row = 0; row < 3; row++) {
-              for (let col = 0; col < 3; col++) {
-                layoutPattern.push({
-                  x: backRowX + row * cartonWidth,  // 奥行き（X軸方向）
-                  z: col * cartonLength,  // 長辺 × 列（Y軸方向、左右）
-                  rotated: false,
-                  gridX: row + 2,         // X: 2,3,4（奥側）
-                  gridY: col + 1,         // Y: 1,2,3（左から右へ）
-                  gridZ: layerNumber      // Z: 段番号
-                });
-              }
-            }
-          } else {
-            // 1,2,5,6,9,10段目: Aパターン（手前9箱横+奥4箱縦）
-            // 【手前側】9箱: 横向き（X軸: 1-3, Y軸: 1-3）
-            for (let row = 0; row < 3; row++) {
-              for (let col = 0; col < 3; col++) {
-                layoutPattern.push({
-                  x: row * cartonWidth,   // 短辺 × 行（X軸方向、手前奥）
-                  z: col * cartonLength,  // 長辺 × 列（Y軸方向、左右）
-                  rotated: false,
-                  gridX: row + 1,         // X: 1,2,3（手前から奥へ）
-                  gridY: col + 1,         // Y: 1,2,3（左から右へ）
-                  gridZ: layerNumber      // Z: 段番号
-                });
-              }
-            }
-            
-            // 【奥側】4箱: 縦向き（X軸: 4, Y軸: 1-4）
-            const backRowX = 3 * cartonWidth;  // 奥側のX座標
-            for (let col = 0; col < 4; col++) {
-              layoutPattern.push({
-                x: backRowX,            // 奥側に配置（X軸方向）
-                z: col * cartonWidth,   // 短辺 × 列（Y軸方向、左右）
-                rotated: true,          // 90度回転
-                gridX: 4,               // X: 4（奥側）
-                gridY: col + 1,         // Y: 1,2,3,4（左から右へ）
-                gridZ: layerNumber      // Z: 段番号
-              });
-            }
+          // 単一グリッド配置
+          const useCols = gridResult.cols;
+          const useRotated = gridResult.rotated;
+
+          for (let i = 0; i < numCartons; i++) {
+            const col = i % useCols;
+            const row = Math.floor(i / useCols);
+            layoutPattern.push({
+              x: useRotated ? row * cartonLength : row * cartonWidth,
+              z: useRotated ? col * cartonWidth : col * cartonLength,
+              rotated: useRotated,
+              gridX: col + 1, gridY: row + 1, gridZ: layerNumber
+            });
           }
-        }
-      } else {
-        // デフォルト配置（13箱以外）
-        const colsPerRow = Math.ceil(Math.sqrt(layer.cartons.length));
-        for (let i = 0; i < layer.cartons.length; i++) {
-          layoutPattern.push({
-            x: Math.floor(i / colsPerRow) * cartonWidth,   // X軸方向（手前奥）
-            z: (i % colsPerRow) * cartonLength,             // Y軸方向（左右）
-            rotated: false
-          });
         }
       }
       
-      // 原点を「正面左手前」の「パレット上面」に設定
       if (layoutPattern.length > 0) {
-        // 配置パターンに基づいて段ボールを配置
         layer.cartons.forEach((carton, idx) => {
           if (idx >= layoutPattern.length) return;
           
           const pattern = layoutPattern[idx];
-          const cartonL = carton.length * scale;  // 354mm
-          const cartonW = carton.width * scale;   // 225mm
-          const cartonH = carton.height * scale;  // 125mm
+          const cartonL = carton.length * scale;
+          const cartonW = carton.width * scale;
+          const cartonH = carton.height * scale;
           
-          if (useVertical5Pattern) {
-            // 縦置き5箱: 段ボールを横倒しにして縦置き
-            // 通常: 354mm × 225mm × 125mm
-            // 縦置き: 125mm × 354mm × 225mm（高さ）
-            const boxWidth = cartonH;   // 125mm（元の高さを横幅として使用）
-            const boxDepth = cartonL;   // 354mm（長辺を奥行きとして使用）
-            const boxHeight = cartonW;  // 225mm（幅を高さとして使用）
+          {
+            const boxWidthThree = pattern.rotated ? cartonW : cartonL;
+            const boxDepthThree = pattern.rotated ? cartonL : cartonW;
             
             positions.push({
               carton,
               position: [
-                pattern.z + boxWidth / 2,    // pattern.z = 左右方向（Y軸）
-                currentHeight + boxHeight / 2,
-                pattern.x + boxDepth / 2     // pattern.x = 手前奥方向（X軸）
-              ],
-              size: [boxWidth, boxHeight, boxDepth],  // 縦置き用サイズ
-              rotation: 0,  // 回転なし
-              isVertical: true,
-              layerNumber: layerNumber,  // layerNumberをそのまま使用
-              cartonIndex: idx,
-              gridX: pattern.gridX,
-              gridY: pattern.gridY,
-              gridZ: pattern.gridZ
-            });
-          } else {
-            // 通常の配置（13回しパターンまたはデフォルト）
-            // 回転を考慮したサイズ（X軸とY軸入れ替え後）
-            const boxWidthThree = pattern.rotated ? cartonW : cartonL;  // Three.jsのX軸サイズ（左右）
-            const boxDepthThree = pattern.rotated ? cartonL : cartonW;  // Three.jsのZ軸サイズ（手前奥）
-            
-            positions.push({
-              carton,
-              position: [
-                pattern.z + boxWidthThree / 2,   // pattern.z = 左右方向（Y軸→Three.jsのX）
+                pattern.z + boxWidthThree / 2,
                 currentHeight + cartonH / 2,
-                pattern.x + boxDepthThree / 2    // pattern.x = 手前奥方向（X軸→Three.jsのZ）
+                -(pattern.x + boxDepthThree / 2)
               ],
               size: [cartonL, cartonH, cartonW],
               rotation: pattern.rotated ? Math.PI / 2 : 0,
               isVertical: false,
-              layerNumber: layerNumber,  // layerNumberをそのまま使用
-              cartonIndex: idx,
-              gridX: pattern.gridX,
-              gridY: pattern.gridY,
-              gridZ: pattern.gridZ
+              layerNumber, cartonIndex: idx,
+              gridX: pattern.gridX, gridY: pattern.gridY, gridZ: pattern.gridZ
             });
           }
         });
       }
       
-      // 次の段の高さを計算
-      let maxHeight;
-      if (useVertical5Pattern) {
-        // 縦置きの場合は width（225mm）が高さになる
-        maxHeight = Math.max(...layer.cartons.map(c => c.width * scale));
-      } else {
-        maxHeight = Math.max(...layer.cartons.map(c => c.height * scale));
-      }
+      const maxHeight = Math.max(...layer.cartons.map(c => c.height * scale));
       currentHeight += maxHeight;
     });
     
     return positions;
-  }, [layers, scale, palletSize]);
+  }, [layers, scale, palletSize, calculateOptimalGrid]);
   
   // 段ボールの色をランダムに生成（茶色系）
   const getCartonColor = (index: number) => {
@@ -831,7 +795,7 @@ export default function PalletViewer3D({
     newPlacements.set(key, {
       position: current?.position || originalPlacement.position,
       rotation: newRotation,
-      isVertical: current?.isVertical ?? originalPlacement.isVertical
+      isVertical: current?.isVertical ?? originalPlacement.isVertical ?? false
     });
     
     // サイズが変わった場合、隣接する段ボールを押し出す
@@ -906,7 +870,7 @@ export default function PalletViewer3D({
           newPlacements.set(otherKey, {
             position: newPos,
             rotation: otherCustom?.rotation ?? otherCarton.rotation,
-            isVertical: otherCustom?.isVertical ?? otherCarton.isVertical
+            isVertical: otherCustom?.isVertical ?? otherCarton.isVertical ?? false
           });
         }
       });
@@ -998,7 +962,7 @@ export default function PalletViewer3D({
         newPlacements.set(affectedKey, {
           position: newPos,
           rotation: affectedCustom?.rotation ?? placement.rotation,
-          isVertical: affectedCustom?.isVertical ?? placement.isVertical
+          isVertical: affectedCustom?.isVertical ?? placement.isVertical ?? false
         });
       });
     }
@@ -1068,7 +1032,7 @@ export default function PalletViewer3D({
       newPlacements.set(key, {
         position: newPos,
         rotation: current?.rotation ?? placement.rotation,
-        isVertical: current?.isVertical ?? placement.isVertical
+        isVertical: current?.isVertical ?? placement.isVertical ?? false
       });
     });
     
@@ -1215,11 +1179,12 @@ export default function PalletViewer3D({
   }, [cartonPositions]);
   
   return (
-    <div style={{ width: '100%', height: '500px', background: 'linear-gradient(to bottom, #1a1a2e 0%, #16213e 100%)', position: 'relative' }}>
+    <div style={{ width: '100%', height: '650px', background: 'linear-gradient(to bottom, #1a1a2e 0%, #16213e 100%)', position: 'relative' }}>
       <Canvas
-        camera={{ position: [0.8, 1.8, -1.5], fov: 50 }}
+        camera={{ position: [1.2, 1.5, 1.8], fov: 50 }}
         shadows
-        gl={{ antialias: true, alpha: true }}
+        gl={{ antialias: true, alpha: true, powerPreference: 'default', failIfMajorPerformanceCaveat: false }}
+        dpr={[1, 1.5]}
         onPointerMissed={() => {
           // 背景（オブジェクト以外）をクリックした場合は選択解除
           setSelectedCarton(null);
@@ -1241,19 +1206,42 @@ export default function PalletViewer3D({
         <PalletBase size={palletSize} />
         
         {/* パレットの境界枠（視覚的ガイド）- 原点を正面左手前に */}
-        <mesh position={[palletSize * scale / 2, 0.01, palletSize * scale / 2]}>
-          <boxGeometry args={[palletSize * scale, 0.002, palletSize * scale / 2]} />
+        <mesh position={[palletSize * scale / 2, 0.01, -palletSize * scale / 2]}>
+          <boxGeometry args={[palletSize * scale, 0.002, palletSize * scale]} />
           <meshBasicMaterial color="#ffff00" transparent opacity={0.3} wireframe />
         </mesh>
         
-        {/* 軸ヘルパー - 原点を正面左手前に */}
-        <axesHelper args={[0.3]} position={[0, 0.01, 0]} />
+        {/* 手動の軸線（Y軸=-Z方向に対応するため、axesHelperは使わない） */}
+        <group position={[0, 0.01, 0]}>
+          {/* X軸線（赤）: 左→右 = +X */}
+          <primitive object={(() => {
+            const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0.5,0,0)]);
+            return new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 }));
+          })()} />
+          {/* Y軸線（青）: 手前→奥 = -Z */}
+          <primitive object={(() => {
+            const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-0.5)]);
+            return new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0x0066ff, linewidth: 2 }));
+          })()} />
+          {/* Z軸線（緑）: 下→上 = +Y */}
+          <primitive object={(() => {
+            const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,0.5,0)]);
+            return new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0x00cc00, linewidth: 2 }));
+          })()} />
+        </group>
         
-        {/* パレット正面表示（手前側中央に赤い板で「FRONT」を示す）- 正面左手前が原点 */}
-        <group position={[palletSize * scale / 2, 0.15, -0.15]}>
-          <mesh rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[0.8, 0.15]} />
-            <meshBasicMaterial color="#ff0000" side={THREE.DoubleSide} />
+        {/* パレット正面表示 - Z=0側（手前、カメラ側）に赤い板 */}
+        <group position={[palletSize * scale / 2, 0.08, 0.02]}>
+          <mesh>
+            <boxGeometry args={[palletSize * scale + 0.04, 0.16, 0.02]} />
+            <meshStandardMaterial color="#cc0000" roughness={0.5} />
+          </mesh>
+        </group>
+        {/* 正面ラベル */}
+        <group position={[palletSize * scale / 2, 0.08, 0.06]}>
+          <mesh rotation={[0, 0, 0]}>
+            <planeGeometry args={[0.4, 0.12]} />
+            <meshBasicMaterial color="#ffffff" side={THREE.DoubleSide} />
           </mesh>
         </group>
         
@@ -1323,26 +1311,31 @@ export default function PalletViewer3D({
         })}
         
         {/* グリッド表示（床）- 正面左手前を原点に */}
-        <primitive object={new THREE.GridHelper(5, 20, '#444', '#222')} position={[palletSize * scale / 2, -0.1, palletSize * scale / 2]} />
+        <primitive object={new THREE.GridHelper(5, 20, '#444', '#222')} position={[palletSize * scale / 2, -0.1, -palletSize * scale / 2]} />
         
         {/* 削除: 中央のaxesHelperは不要 */}
         
-        {/* 軸ラベル（X: 赤、Y: 緑、Z: 青）- 常に手前に表示 */}
-        <group position={[0, 0, 0]}>
-          {/* X軸（赤）- 左右方向 */}
-          <mesh position={[0.8, 0, 0]} renderOrder={999}>
-            <sphereGeometry args={[0.05]} />
+        {/* 軸端マーカー - 原点(0,0,0)=正面左手前 */}
+        <group position={[0, 0.01, 0]}>
+          {/* 原点マーカー（白い球） */}
+          <mesh position={[0, 0, 0]} renderOrder={999}>
+            <sphereGeometry args={[0.03]} />
+            <meshBasicMaterial color="#ffffff" depthTest={false} />
+          </mesh>
+          {/* X軸端（赤）→ +X = 左→右 */}
+          <mesh position={[0.55, 0, 0]} rotation={[0, 0, -Math.PI / 2]} renderOrder={999}>
+            <coneGeometry args={[0.03, 0.06, 8]} />
             <meshBasicMaterial color="#ff0000" depthTest={false} />
           </mesh>
-          {/* Z軸（青）- 前後方向 */}
-          <mesh position={[0, 0, 0.8]} renderOrder={999}>
-            <sphereGeometry args={[0.05]} />
-            <meshBasicMaterial color="#0000ff" depthTest={false} />
+          {/* Y軸端（青）→ -Z = 手前→奥 */}
+          <mesh position={[0, 0, -0.55]} rotation={[Math.PI / 2, 0, 0]} renderOrder={999}>
+            <coneGeometry args={[0.03, 0.06, 8]} />
+            <meshBasicMaterial color="#0066ff" depthTest={false} />
           </mesh>
-          {/* Y軸（緑）- 上下方向 */}
-          <mesh position={[0, 0.8, 0]} renderOrder={999}>
-            <sphereGeometry args={[0.05]} />
-            <meshBasicMaterial color="#00ff00" depthTest={false} />
+          {/* Z軸端（緑）→ +Y = 下→上 */}
+          <mesh position={[0, 0.55, 0]} renderOrder={999}>
+            <coneGeometry args={[0.03, 0.06, 8]} />
+            <meshBasicMaterial color="#00cc00" depthTest={false} />
           </mesh>
         </group>
         
@@ -1350,10 +1343,10 @@ export default function PalletViewer3D({
         <OrbitControls 
           enableDamping
           dampingFactor={0.05}
-          minDistance={1.5}
-          maxDistance={10}
+          minDistance={0.8}
+          maxDistance={8}
           maxPolarAngle={Math.PI / 2}
-          target={[0.55, 0.4, 0.4]}
+          target={[0.55, 0.3, -0.55]}
         />
         
         {/* 軸ヘルパー（開発用） */}
@@ -1389,33 +1382,31 @@ export default function PalletViewer3D({
         fontSize: '12px',
         fontFamily: 'sans-serif',
         lineHeight: '1.8',
-        border: '1px solid rgba(255,255,255,0.3)'
+        border: '1px solid rgba(255,255,255,0.3)',
+        zIndex: 10
       }}>
-        <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#fbbf24', fontSize: '13px' }}>📐 座標系（原点：正面左手前）</div>
-        <div style={{ marginBottom: '6px' }}>
-          <span style={{ color: '#0000ff', fontWeight: 'bold' }}>━↗</span>
-          <span style={{ color: '#4dabf7', fontWeight: '600', marginLeft: '6px' }}>青い線</span>
-          <span style={{ color: '#9ca3af', marginLeft: '6px' }}>= X軸（1→2→3：手前→奥）</span>
-        </div>
+        <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#fbbf24', fontSize: '13px' }}>座標系（原点：正面左手前）</div>
         <div style={{ marginBottom: '6px' }}>
           <span style={{ color: '#ff0000', fontWeight: 'bold' }}>━→</span>
           <span style={{ color: '#ff6b6b', fontWeight: '600', marginLeft: '6px' }}>赤い線</span>
-          <span style={{ color: '#9ca3af', marginLeft: '6px' }}>= Y軸（1→2→3：左→右）</span>
+          <span style={{ color: '#e0e0e0', marginLeft: '6px' }}>= X軸（正面に沿って左→右）</span>
+        </div>
+        <div style={{ marginBottom: '6px' }}>
+          <span style={{ color: '#0066ff', fontWeight: 'bold' }}>━↗</span>
+          <span style={{ color: '#4dabf7', fontWeight: '600', marginLeft: '6px' }}>青い線</span>
+          <span style={{ color: '#e0e0e0', marginLeft: '6px' }}>= Y軸（手前→奥）</span>
         </div>
         <div style={{ marginBottom: '10px' }}>
-          <span style={{ color: '#00ff00', fontWeight: 'bold' }}>↑━</span>
+          <span style={{ color: '#00cc00', fontWeight: 'bold' }}>↑━</span>
           <span style={{ color: '#51cf66', fontWeight: '600', marginLeft: '6px' }}>緑の線</span>
-          <span style={{ color: '#9ca3af', marginLeft: '6px' }}>= Z軸（1→2→3：下→上）</span>
+          <span style={{ color: '#e0e0e0', marginLeft: '6px' }}>= Z軸（下→上）</span>
         </div>
         <div style={{ paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.2)' }}>
-          <div style={{ color: '#ff0000', fontWeight: 'bold', fontSize: '13px', marginBottom: '4px' }}>
-            ▬▬ 赤い板 = 正面 ▬▬
+          <div style={{ color: '#ff4444', fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
+            ▬ 赤い板 = パレット正面（フォークリフト差込側）
           </div>
-          <div style={{ color: '#9ca3af', fontSize: '11px' }}>
-            （フォークリフト差込側）
-          </div>
-          <div style={{ color: '#9ca3af', fontSize: '11px', marginTop: '4px' }}>
-            原点(0,0,0) = 正面から見て左手前
+          <div style={{ color: '#ffffff', fontSize: '11px', marginTop: '4px', background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '3px' }}>
+            白い球 = 原点(0,0,0) = 正面から見て左手前
           </div>
         </div>
       </div>
@@ -1444,7 +1435,7 @@ export default function PalletViewer3D({
         <div style={{
           position: 'absolute',
           left: '10px',
-          top: '10px',
+          bottom: '10px',
           background: 'rgba(0,0,0,0.85)',
           color: 'white',
           padding: '16px',
@@ -1452,7 +1443,7 @@ export default function PalletViewer3D({
           fontSize: '13px',
           fontFamily: 'sans-serif',
           width: '280px',
-          maxHeight: '480px',
+          maxHeight: '380px',
           overflowY: 'auto'
         }}>
           <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', borderBottom: '2px solid #4a9eff', paddingBottom: '8px' }}>
@@ -1601,9 +1592,9 @@ export default function PalletViewer3D({
                   <button onClick={() => handleMoveCarton('x', -1)} style={buttonStyle}>← X</button>
                   <div></div>
                   <button onClick={() => handleMoveCarton('x', 1)} style={buttonStyle}>X →</button>
-                  <button onClick={() => handleMoveCarton('z', -1)} style={buttonStyle}>↑ Z</button>
+                  <button onClick={() => handleMoveCarton('z', 1)} style={buttonStyle}>↑ Y(手前)</button>
                   <div></div>
-                  <button onClick={() => handleMoveCarton('z', 1)} style={buttonStyle}>Z ↓</button>
+                  <button onClick={() => handleMoveCarton('z', -1)} style={buttonStyle}>Y(奥) ↓</button>
                 </div>
               </div>
             </>
